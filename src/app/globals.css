@@ -1,0 +1,148 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/**
+ * Powerhouse brand tokens — ported from Angular `theme.scss` / Figma
+ * "Power House_Web" (primary #4c6fff, page #f4f6fb, Roboto).
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-table-header: var(--table-header);
+  --color-table-header-foreground: var(--table-header-foreground);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --shadow-card: var(--shadow-card);
+  --shadow-dialog: var(--shadow-dialog);
+}
+
+:root {
+  --background: #f4f6fb;
+  --foreground: #202224;
+  --card: #ffffff;
+  --card-foreground: #202224;
+  --popover: #ffffff;
+  --popover-foreground: #121212;
+  --primary: #4c6fff;
+  --primary-foreground: #ffffff;
+  --primary-hover: #3a5cf0;
+  --primary-soft: #eaeffe;
+  --secondary: #eaeffe;
+  --secondary-foreground: #4c6fff;
+  --muted: #eef3ff;
+  --muted-foreground: #6b7a99;
+  --accent: #eaeffe;
+  --accent-foreground: #4c6fff;
+  --destructive: #f04438;
+  --border: #e6ebf3;
+  --input: #d9e0ed;
+  --ring: #4c6fff;
+  --success: #1bc28a;
+  --warning: #ff9b1f;
+  --table-header: #eef3ff;
+  --table-header-foreground: #3d4f6f;
+  --chart-1: #4c6fff;
+  --chart-2: #3cd856;
+  --chart-3: #fa5a7d;
+  --chart-4: #ff947a;
+  --chart-5: #05004e;
+  --radius: 0.75rem; /* 12px — Angular card / entity dialog radius */
+  --sidebar: #ffffff;
+  --sidebar-foreground: rgba(17, 24, 39, 0.82);
+  --sidebar-primary: #4c6fff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(76, 111, 255, 0.1);
+  --sidebar-accent-foreground: #4c6fff;
+  --sidebar-border: rgba(76, 111, 255, 0.08);
+  --sidebar-ring: #4c6fff;
+  --shadow-card: 0 2px 8px rgba(17, 24, 39, 0.06);
+  --shadow-dialog: 0 12px 40px rgba(17, 24, 39, 0.14);
+}
+
+/* Light-only product (Angular has no dark theme). Keep `.dark` for Sonner. */
+.dark {
+  --background: #f4f6fb;
+  --foreground: #202224;
+  --card: #ffffff;
+  --card-foreground: #202224;
+  --popover: #ffffff;
+  --popover-foreground: #121212;
+  --primary: #4c6fff;
+  --primary-foreground: #ffffff;
+  --primary-hover: #3a5cf0;
+  --primary-soft: #eaeffe;
+  --secondary: #eaeffe;
+  --secondary-foreground: #4c6fff;
+  --muted: #eef3ff;
+  --muted-foreground: #6b7a99;
+  --accent: #eaeffe;
+  --accent-foreground: #4c6fff;
+  --destructive: #f04438;
+  --border: #e6ebf3;
+  --input: #d9e0ed;
+  --ring: #4c6fff;
+  --sidebar: #ffffff;
+  --sidebar-foreground: rgba(17, 24, 39, 0.82);
+  --sidebar-primary: #4c6fff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(76, 111, 255, 0.1);
+  --sidebar-accent-foreground: #4c6fff;
+  --sidebar-border: rgba(76, 111, 255, 0.08);
+  --sidebar-ring: #4c6fff;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  html {
+    @apply font-sans;
+  }
+}
