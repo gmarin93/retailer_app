@@ -89,7 +89,9 @@ function AssistantChatInner() {
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom">
-                Export a smart report of this conversation
+                {chat.canExport
+                  ? "Export a smart report of this conversation"
+                  : "Send a message first to enable export"}
               </TooltipContent>
             </Tooltip>
             <button
@@ -107,7 +109,10 @@ function AssistantChatInner() {
         </header>
 
         {reportOpen ? (
-          <ReportWizard history={chat.history} onClose={() => setReportOpen(false)} />
+          <ReportWizard
+            history={chat.reportHistory}
+            onClose={() => setReportOpen(false)}
+          />
         ) : (
           <>
             <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">

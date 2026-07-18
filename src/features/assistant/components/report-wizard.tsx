@@ -3,18 +3,20 @@
 import {
   AiMagicIcon,
   ArrowLeft01Icon,
+  Briefcase01Icon,
   Cancel01Icon,
   CheckListIcon,
   CodeIcon,
   Download01Icon,
   File01Icon,
-  JusticeScale01Icon,
+  GavelIcon,
+  HardHatIcon,
   Mail01Icon,
   Message01Icon,
-  NoteIcon,
   Pdf02Icon,
   SentIcon,
   TableIcon,
+  TextAlignLeftIcon,
   UserGroupIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
@@ -39,19 +41,19 @@ const REPORT_TYPES: ReportChoice[] = [
   {
     value: "conversation_summary",
     label: "Conversation Summary",
-    icon: NoteIcon,
+    icon: File01Icon,
     hint: "What was asked, found and concluded",
   },
   {
     value: "executive_summary",
     label: "Executive Summary",
-    icon: File01Icon,
+    icon: Briefcase01Icon,
     hint: "Key findings and next steps, for a business audience",
   },
   {
     value: "technical_report",
     label: "Technical Report",
-    icon: CodeIcon,
+    icon: HardHatIcon,
     hint: "Technical details, approaches and conclusions",
   },
   {
@@ -63,7 +65,7 @@ const REPORT_TYPES: ReportChoice[] = [
   {
     value: "decisions",
     label: "Decisions Made",
-    icon: JusticeScale01Icon,
+    icon: GavelIcon,
     hint: "Decisions with their rationale",
   },
   {
@@ -90,7 +92,7 @@ const REPORT_FORMATS: { value: KlikinReportFormat; label: string; icon: IconSvgE
   { value: "pdf", label: "PDF", icon: Pdf02Icon },
   { value: "xlsx", label: "Excel", icon: TableIcon },
   { value: "md", label: "Markdown", icon: CodeIcon },
-  { value: "txt", label: "Plain text", icon: NoteIcon },
+  { value: "txt", label: "Plain text", icon: TextAlignLeftIcon },
 ];
 
 const REPORT_OPTIONS: { key: string; label: string }[] = [
@@ -152,6 +154,10 @@ export function ReportWizard({ history, onClose }: ReportWizardProps) {
 
   async function generatePreview() {
     if (loading) return;
+    if (!history.length) {
+      setError("Start a conversation before exporting a report.");
+      return;
+    }
     setLoading(true);
     setError("");
     setFile(null);

@@ -247,6 +247,15 @@ export function useAssistantChat() {
     );
   };
 
+  /** Prefer server history; fall back to local turns so export works even if
+   *  the chat reply omitted `history`. */
+  const reportHistory =
+    history.length > 0
+      ? history
+      : messages
+          .filter((m) => !m.pending && m.content.trim())
+          .map((m) => ({ role: m.role, content: m.content }));
+
   return {
     open,
     setOpen,
@@ -255,7 +264,8 @@ export function useAssistantChat() {
     sending,
     suggestions,
     history,
-    canExport: history.length > 0,
+    reportHistory,
+    canExport: reportHistory.length > 0,
     scrollAnchorRef,
     send,
     confirm,
