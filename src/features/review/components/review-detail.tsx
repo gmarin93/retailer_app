@@ -1,6 +1,13 @@
 "use client";
 
-import { ArrowLeft01Icon, ArrowRight01Icon, Mail01Icon } from "@hugeicons/core-free-icons";
+import {
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  Camera01Icon,
+  Clock01Icon,
+  HelpCircleIcon,
+  Mail01Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -13,9 +20,11 @@ import {
 import { UserRole } from "@/features/auth/types";
 import { ReportDialog } from "@/features/itinerary/components/report-dialog";
 import { buildJobMailto } from "@/features/itinerary/utils";
+import { JobDocumentsChips } from "@/features/jobs/components/job-documents-chips";
 import { JobPhotosList } from "@/features/jobs/components/job-photos-list";
 import { JobQuestionsList } from "@/features/jobs/components/job-questions-list";
-import { JobStatusChip } from "@/features/jobs/components/job-status-chip";
+import { VisitSectionPanel } from "@/features/jobs/components/visit-section-panel";
+import { VisitSummaryCard } from "@/features/jobs/components/visit-summary-card";
 import {
   jobKeys,
   useDeleteJobReport,
@@ -32,7 +41,6 @@ import {
 } from "@/features/jobs/schemas";
 import { ConfirmDialog } from "@/shared/components/confirm-dialog";
 import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import {
   CancelDialog,
   ExtendDialog,
@@ -44,16 +52,12 @@ import {
 import { ReviewGalleryOverlay } from "./review-gallery-overlay";
 
 type ActionDialogKind =
-  "extend" | "reassign" | "cancel" | "reinstate" | "return" | "email-update";
-
-function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex justify-between gap-4 py-1.5 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-right font-medium">{value}</span>
-    </div>
-  );
-}
+  | "extend"
+  | "reassign"
+  | "cancel"
+  | "reinstate"
+  | "return"
+  | "email-update";
 
 /** Whether every photo response has been rated (not pending). */
 function areAllPhotoResponsesRated(job: DetailedJob): boolean {
@@ -63,9 +67,8 @@ function areAllPhotoResponsesRated(job: DetailedJob): boolean {
 }
 
 /**
- * Review visit detail: status actions in the header, photos + questions
- * columns, and the info/reports sidebar — ported from the `review-detail-*`
- * component family and `ReviewDetailBloc`.
+ * Review visit detail — Angular `review-detail-*` layout:
+ * toolbar → visit summary card (meta + actions + reports/docs) → Photos | Questions columns.
  */
 export function ReviewDetail({
   job,
@@ -102,21 +105,18 @@ export function ReviewDetail({
   const mayModifyReports = canModifyReports(role);
   const canSubmitReport = mayModifyReports && job.reports.length === 0;
 
-  /**
-   * Mark-as-reviewed gate ported from `disableMarkJobAsReviewed`: open/pending
-   * only, requirements filled, all photos rated, and no planned/actual time
-   * mismatch unless the status code bypasses it.
-   */
-  const statusCode = job.status_code as { bypass_mistmatched_actual_time?: boolean } | null;
+  const statusCode = job.status_code as {
+    bypass_mistmatched_actual_time?: boolean;
+  } | null;
   const timeMismatch =
-    job.actual_minutes != null && job.actual_minutes !== (job.visit?.planned_minutes ?? 0);
+    job.actual_minutes != null &&
+    job.actual_minutes !== (job.visit?.planned_minutes ?? 0);
   const disableMarkReviewed =
     !["open", "pending"].includes(job.status) ||
     !areJobRequirementsFilled(job) ||
     !areAllPhotoResponsesRated(job) ||
     (timeMismatch && !statusCode?.bypass_mistmatched_actual_time);
 
-  /** Email: customers write to account managers, others to assignees. */
   const emails = isCustomer
     ? (job.customer?.managers ?? []).map((m) => m.email).filter((e): e is string => !!e)
     : job.assignees.map((a) => a.email).filter((e): e is string => !!e);
@@ -126,27 +126,16 @@ export function ReviewDetail({
     void queryClient.invalidateQueries({ queryKey: jobKeys.lists() });
   };
 
-  const assigneeNames =
-    job.assignments.length > 0
-      ? job.assignments
-          .map((a) => [a.assignee.first_name, a.assignee.last_name].filter(Boolean).join(" "))
-          .join(", ")
-      : "—";
-
   const cancelReason = (job as { cancel_reason?: string | null }).cancel_reason;
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="mx-auto max-w-[1200px] space-y-3 sm:space-y-4">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Button variant="ghost" size="sm" onClick={onClose}>
           <HugeiconsIcon icon={ArrowLeft01Icon} aria-hidden="true" className="size-4" />
           Back
         </Button>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-semibold">
-            Visit #{job.id} — {job.customer?.title}
-          </h1>
-        </div>
+        <div className="min-w-0 flex-1" />
         <div className="flex items-center gap-1">
           <Button
             variant="outline"
@@ -162,231 +151,171 @@ export function ReviewDetail({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <JobStatusChip job={job} />
-        <div className="flex-1" />
-        {supervisorish && job.status === "pending" && (
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={markStatus.isPending}
-            onClick={() => markStatus.mutate("open")}
-          >
-            Mark as WIP
-          </Button>
-        )}
-        {supervisorish && (
-          <Button
-            size="sm"
-            disabled={disableMarkReviewed || markStatus.isPending}
-            onClick={() => markStatus.mutate("completed")}
-          >
-            Mark as reviewed
-          </Button>
-        )}
-        {managerish && (
+      <VisitSummaryCard
+        job={job}
+        storeFormat="review"
+        showAssignees
+        actions={
           <>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!mayWork}
-              onClick={() => setOpenDialog("extend")}
-            >
-              Change visit
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!mayWork}
-              onClick={() => setOpenDialog("reassign")}
-            >
-              Reassign
-            </Button>
-            {job.status === "cancelled" ? (
-              <Button variant="outline" size="sm" onClick={() => setOpenDialog("reinstate")}>
-                Reinstate
-              </Button>
-            ) : (
+            {supervisorish && job.status === "pending" && (
               <Button
-                variant="outline"
                 size="sm"
-                disabled={!mayWork}
-                onClick={() => setOpenDialog("cancel")}
+                disabled={markStatus.isPending}
+                onClick={() => markStatus.mutate("open")}
               >
-                Cancel visit
+                Mark as WIP
+              </Button>
+            )}
+            {supervisorish && (
+              <Button
+                size="sm"
+                disabled={disableMarkReviewed || markStatus.isPending}
+                onClick={() => markStatus.mutate("completed")}
+              >
+                Mark as reviewed
+              </Button>
+            )}
+            {managerish && (
+              <>
+                <Button
+                  size="sm"
+                  disabled={!mayWork}
+                  onClick={() => setOpenDialog("extend")}
+                >
+                  Edit Visit
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={!mayWork}
+                  onClick={() => setOpenDialog("reassign")}
+                >
+                  Reassign
+                </Button>
+                {job.status === "cancelled" ? (
+                  <Button size="sm" onClick={() => setOpenDialog("reinstate")}>
+                    Reinstate
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    disabled={!mayWork}
+                    onClick={() => setOpenDialog("cancel")}
+                  >
+                    Cancel visit
+                  </Button>
+                )}
+              </>
+            )}
+            {supervisorish && (
+              <>
+                <Button size="sm" onClick={() => setOpenDialog("return")}>
+                  Return Visit
+                </Button>
+                <Button size="sm" onClick={() => setOpenDialog("email-update")}>
+                  Issue email update
+                </Button>
+              </>
+            )}
+            {emails.length > 0 && (
+              <Button
+                size="sm"
+                onClick={() => window.open(buildJobMailto(job, emails), "_self")}
+              >
+                <HugeiconsIcon icon={Mail01Icon} aria-hidden="true" className="size-4" />
+                Email
+              </Button>
+            )}
+            {canSubmitReport && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setEditingReport(null);
+                  setReportDialogOpen(true);
+                }}
+              >
+                <HugeiconsIcon icon={Clock01Icon} aria-hidden="true" className="size-4" />
+                Submit report
               </Button>
             )}
           </>
+        }
+      >
+        {job.reports.length > 0 && (
+          <div className="space-y-3 border-t border-border pt-4">
+            {job.reports.map((report) => (
+              <div key={report.id} className="space-y-2 text-sm">
+                <p>
+                  <span className="font-bold">Report:</span>{" "}
+                  Reported by:{" "}
+                  {[report.reported_by_user?.first_name, report.reported_by_user?.last_name]
+                    .filter(Boolean)
+                    .join(" ") || "—"}
+                  <span className="mx-2">Reported on: {formatUtcDate(report.completed_on)}</span>
+                  <span>Reported time: {formatMinutes(report.actual_minutes)}</span>
+                  {report.actual_minutes !== (job.visit?.planned_minutes ?? 0) && (
+                    <span className="ml-1 text-xs text-amber-600">
+                      (planned {formatMinutes(job.visit?.planned_minutes)})
+                    </span>
+                  )}
+                </p>
+                {mayModifyReports && (
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEditingReport(report);
+                        setReportDialogOpen(true);
+                      }}
+                    >
+                      Edit Report
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => setDeletingReport(report)}
+                    >
+                      Delete report
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         )}
-        {supervisorish && (
-          <>
-            <Button variant="outline" size="sm" onClick={() => setOpenDialog("return")}>
-              Return to itinerary
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setOpenDialog("email-update")}>
-              Email update
-            </Button>
-          </>
+
+        {job.status === "cancelled" && cancelReason && managerish && (
+          <div className="border-t border-border pt-4 text-sm">
+            <span className="font-bold">Cancel Reason:</span> {cancelReason}
+          </div>
         )}
-        {emails.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.open(buildJobMailto(job, emails), "_self")}
-          >
-            <HugeiconsIcon icon={Mail01Icon} aria-hidden="true" className="size-4" />
-            Email
-          </Button>
+
+        {job.documents.length > 0 && (
+          <div className="space-y-2 border-t border-border pt-4">
+            <p className="text-sm font-bold">Documents</p>
+            <JobDocumentsChips job={job} />
+          </div>
         )}
-      </div>
+      </VisitSummaryCard>
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Photos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <JobPhotosList
-                job={job}
-                reviewMode
-                view="reviewable"
-                onPhotoClick={(response) => {
-                  setGalleryPhotoId(response.id);
-                  setGalleryOpen(true);
-                }}
-              />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Questions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <JobQuestionsList job={job} />
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Visit info</CardTitle>
-            </CardHeader>
-            <CardContent className="divide-y">
-              <InfoRow label="Cycle" value={job.cycle?.title ?? "—"} />
-              <InfoRow label="Program" value={job.program?.title ?? "—"} />
-              <InfoRow
-                label="Store"
-                value={`${job.retailer?.title ?? ""} #${job.store?.store_no ?? ""}: ${job.store?.title ?? ""}`}
-              />
-              <InfoRow label="Assignees" value={assigneeNames} />
-              <InfoRow label="Starts on" value={formatUtcDate(job.visit?.opens_at)} />
-              <InfoRow label="Due on" value={formatUtcDate(job.visit?.closes_at)} />
-              <InfoRow label="Planned time" value={formatMinutes(job.visit?.planned_minutes)} />
-              {job.status_code?.code && (
-                <InfoRow label="Status code" value={job.status_code.code} />
-              )}
-              {job.status === "cancelled" && cancelReason && managerish && (
-                <InfoRow label="Cancel reason" value={cancelReason} />
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-              <CardTitle className="text-base">Reports</CardTitle>
-              {canSubmitReport && (
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setEditingReport(null);
-                    setReportDialogOpen(true);
-                  }}
-                >
-                  Submit report
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              {job.reports.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No report submitted yet.</p>
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {job.reports.map((report) => (
-                    <li key={report.id} className="space-y-2 rounded-md border p-2">
-                      <p className="font-medium">
-                        {formatMinutes(report.actual_minutes)}
-                        {report.actual_minutes !== (job.visit?.planned_minutes ?? 0) && (
-                          <span className="ml-1 text-xs text-amber-600">
-                            (planned {formatMinutes(job.visit?.planned_minutes)})
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-muted-foreground">
-                        Completed {formatUtcDate(report.completed_on)}
-                        {report.reported_by_user
-                          ? ` by ${[report.reported_by_user.first_name, report.reported_by_user.last_name].filter(Boolean).join(" ")}`
-                          : ""}
-                      </p>
-                      {mayModifyReports && (
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setEditingReport(report);
-                              setReportDialogOpen(true);
-                            }}
-                          >
-                            Edit report
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => setDeletingReport(report)}
-                          >
-                            Delete report
-                          </Button>
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-
-          {job.documents.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Documents</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-1 text-sm">
-                  {job.documents.map((doc) => (
-                    <li key={doc.id}>
-                      {doc.location ? (
-                        <a
-                          href={doc.location}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="underline-offset-2 hover:underline"
-                        >
-                          {doc.title}
-                        </a>
-                      ) : (
-                        doc.title
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
+        <VisitSectionPanel title="Photos" icon={Camera01Icon}>
+          <JobPhotosList
+            job={job}
+            reviewMode
+            view="reviewable"
+            showCardBadge
+            onPhotoClick={(response) => {
+              setGalleryPhotoId(response.id);
+              setGalleryOpen(true);
+            }}
+          />
+        </VisitSectionPanel>
+        <VisitSectionPanel title="Questions" icon={HelpCircleIcon}>
+          <JobQuestionsList job={job} showCardBadge />
+        </VisitSectionPanel>
       </div>
 
       <ExtendDialog

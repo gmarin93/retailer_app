@@ -9,12 +9,15 @@ import {
   MultiplicationSignCircleIcon,
   Loading03Icon,
 } from "@hugeicons/core-free-icons";
+import { useResolvedTheme } from "@/shared/providers/theme-provider";
 
-/** Top-center toasts with Angular notification tokens (success #1bc28a, etc.). */
+/** Top-center toasts with brand notification tokens (light + dark). */
 const Toaster = ({ ...props }: ToasterProps) => {
+  const theme = useResolvedTheme();
+
   return (
     <Sonner
-      theme="light"
+      theme={theme}
       position="top-center"
       className="toaster group"
       icons={{
@@ -40,20 +43,20 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
           "--border-radius": "12px",
-          "--success-bg": "#e7f8f1",
-          "--success-text": "#0f172a",
-          "--success-border": "#1bc28a",
-          "--error-bg": "#ffe9e6",
-          "--error-text": "#0f172a",
-          "--error-border": "#f04438",
-          "--warning-bg": "#fff3df",
-          "--warning-text": "#0f172a",
-          "--warning-border": "#ff9b1f",
+          "--success-bg": "var(--toast-success-bg)",
+          "--success-text": "var(--toast-success-text)",
+          "--success-border": "var(--toast-success-border)",
+          "--error-bg": "var(--toast-error-bg)",
+          "--error-text": "var(--toast-error-text)",
+          "--error-border": "var(--toast-error-border)",
+          "--warning-bg": "var(--toast-warning-bg)",
+          "--warning-text": "var(--toast-warning-text)",
+          "--warning-border": "var(--toast-warning-border)",
         } as React.CSSProperties
       }
       toastOptions={{
         classNames: {
-          toast: "cn-toast shadow-[0_12px_30px_rgba(15,23,42,0.12),0_2px_6px_rgba(15,23,42,0.05)]",
+          toast: "cn-toast shadow-[var(--shadow-dialog)]",
         },
       }}
       {...props}

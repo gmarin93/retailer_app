@@ -5,7 +5,6 @@ import { JobsListToolbar } from "@/features/jobs/components/jobs-list-toolbar";
 import { JobsTable } from "@/features/jobs/components/jobs-table";
 import { ErrorState } from "@/shared/components/error-state";
 import { LoadingState } from "@/shared/components/loading-state";
-import { PageHeader } from "@/shared/components/page-header";
 import { PAGE_SIZE_OPTIONS, useArchivesMasterDetail } from "../hooks";
 import { ArchivesDetail } from "./archives-detail";
 
@@ -32,15 +31,17 @@ export function ArchivesView() {
   }
 
   return (
-    <div className="space-y-4" data-testid="archives-page">
-      <PageHeader title="Archives" description="Your past visits." />
-
+    <div
+      className="-mx-3 -mt-1 flex min-h-0 flex-col gap-3 bg-[#f5f7fa] px-3 py-3 sm:-mx-6 sm:px-6 sm:py-5 md:-mx-8 md:px-8 dark:bg-background"
+      data-testid="archives-page"
+    >
       <JobsListToolbar
         view="archived"
+        title="Archives"
+        infoTooltip="Your past visits."
         searchInput={searchInput}
         onSearchInputChange={setSearchInput}
         onSearch={() => controller.applySearch(searchInput.trim())}
-        onRefresh={() => void controller.refetchList()}
         filter={controller.filter}
         onFilterChange={controller.applyFilter}
         selectionMode={controller.selectionMode}
@@ -52,7 +53,10 @@ export function ArchivesView() {
       />
 
       {controller.listError ? (
-        <ErrorState error={controller.listError} onRetry={() => void controller.refetchList()} />
+        <ErrorState
+          error={controller.listError}
+          onRetry={() => void controller.refetchList()}
+        />
       ) : (
         <JobsTable
           page={controller.page}

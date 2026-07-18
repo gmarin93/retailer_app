@@ -5,7 +5,6 @@ import { JobsListToolbar } from "@/features/jobs/components/jobs-list-toolbar";
 import { JobsTable } from "@/features/jobs/components/jobs-table";
 import { ErrorState } from "@/shared/components/error-state";
 import { LoadingState } from "@/shared/components/loading-state";
-import { PageHeader } from "@/shared/components/page-header";
 import { PAGE_SIZE_OPTIONS, useReviewMasterDetail } from "../hooks";
 import { ReviewDetail } from "./review-detail";
 
@@ -35,15 +34,17 @@ export function ReviewView() {
   }
 
   return (
-    <div className="space-y-4" data-testid="review-page">
-      <PageHeader title="Review" description="Submitted visits awaiting review." />
-
+    <div
+      className="-mx-3 -mt-1 flex min-h-0 flex-col gap-3 bg-[#f5f7fa] px-3 py-3 sm:-mx-6 sm:px-6 sm:py-5 md:-mx-8 md:px-8 dark:bg-background"
+      data-testid="review-page"
+    >
       <JobsListToolbar
         view="reviewable"
+        title="Review"
+        infoTooltip="Submitted visits awaiting review."
         searchInput={searchInput}
         onSearchInputChange={setSearchInput}
         onSearch={() => controller.applySearch(searchInput.trim())}
-        onRefresh={() => void controller.refetchList()}
         filter={controller.filter}
         onFilterChange={controller.applyFilter}
         selectionMode={controller.selectionMode}
@@ -57,7 +58,10 @@ export function ReviewView() {
       />
 
       {controller.listError ? (
-        <ErrorState error={controller.listError} onRetry={() => void controller.refetchList()} />
+        <ErrorState
+          error={controller.listError}
+          onRetry={() => void controller.refetchList()}
+        />
       ) : (
         <JobsTable
           page={controller.page}

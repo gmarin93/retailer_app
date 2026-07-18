@@ -302,15 +302,23 @@ export async function deleteJobAnswer(
   return questionResponsesSchema.parse(data);
 }
 
-/** `PATCH question_responses/{id}/` — edits an existing answer. */
+/**
+ * `PATCH question_responses/{id}/` — edits an existing answer.
+ * Response is the base model (`answered_by` as user ID), not the nested
+ * detail shape used inside job payloads — only `answer_data` is required.
+ */
+const patchedQuestionResponseSchema = z.looseObject({
+  answer_data: z.unknown(),
+});
+
 export async function patchQuestionResponse(
   responseId: number,
   answerData: unknown,
-): Promise<QuestionResponse> {
+): Promise<{ answer_data: unknown }> {
   const data = await api.patch<unknown>(`${v2}/question_responses/${responseId}/`, {
     answer_data: answerData,
   });
-  return questionResponseSchema.parse(data);
+  return patchedQuestionResponseSchema.parse(data);
 }
 
 /**

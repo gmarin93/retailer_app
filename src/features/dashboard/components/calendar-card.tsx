@@ -148,13 +148,13 @@ export function CalendarCard({ customerId }: { customerId: number | null }) {
                     {format(day, "d")}
                     <span className="flex gap-0.5" aria-hidden="true">
                       {(summary?.completeReviews ?? 0) > 0 && (
-                        <span className="size-1.5 rounded-full bg-[#3cd856]" />
+                        <span className="size-1.5 rounded-full bg-chart-2" />
                       )}
                       {(summary?.reviewsPending ?? 0) > 0 && (
-                        <span className="size-1.5 rounded-full bg-[#fa5a7d]" />
+                        <span className="size-1.5 rounded-full bg-chart-3" />
                       )}
                       {reminderCount > 0 && (
-                        <span className="size-1.5 rounded-full bg-[#4c6fff]" />
+                        <span className="size-1.5 rounded-full bg-chart-1" />
                       )}
                     </span>
                   </button>
@@ -168,12 +168,12 @@ export function CalendarCard({ customerId }: { customerId: number | null }) {
           <h3 className="font-medium">{format(selectedDay, "MMMM d")}</h3>
           <ul className="space-y-1 text-sm">
             <li className="flex items-center gap-2">
-              <span aria-hidden="true" className="size-2 rounded-full bg-[#3cd856]" />
+              <span aria-hidden="true" className="size-2 rounded-full bg-chart-2" />
               {selectedSummary?.completeReviews ?? 0} complete review
               {(selectedSummary?.completeReviews ?? 0) === 1 ? "" : "s"}
             </li>
             <li className="flex items-center gap-2">
-              <span aria-hidden="true" className="size-2 rounded-full bg-[#fa5a7d]" />
+              <span aria-hidden="true" className="size-2 rounded-full bg-chart-3" />
               {selectedSummary?.reviewsPending ?? 0} pending review
               {(selectedSummary?.reviewsPending ?? 0) === 1 ? "" : "s"}
             </li>

@@ -74,6 +74,13 @@ export const invoiceableJobSchema = z.looseObject({
   id: z.number(),
   customer: z.object({ id: z.number(), title: z.string() }).optional(),
   program: z.object({ id: z.number(), title: z.string() }).nullable().optional(),
+  store: z
+    .object({
+      id: z.number().optional(),
+      title: z.string().catch(""),
+      store_no: z.union([z.string(), z.number()]).nullish(),
+    })
+    .nullish(),
 });
 export type InvoiceableJob = z.infer<typeof invoiceableJobSchema>;
 

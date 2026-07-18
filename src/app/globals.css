@@ -7,6 +7,7 @@
 /**
  * Powerhouse brand tokens — ported from Angular `theme.scss` / Figma
  * "Power House_Web" (primary #4c6fff, page #f4f6fb, Roboto).
+ * Dark mode uses layered navy-charcoal surfaces (not inverted light).
  */
 @theme inline {
   --color-background: var(--background);
@@ -49,6 +50,9 @@
   --color-warning: var(--warning);
   --color-table-header: var(--table-header);
   --color-table-header-foreground: var(--table-header-foreground);
+  --color-table-row-hover: var(--table-row-hover);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-main: var(--main);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -58,11 +62,15 @@
   --radius-4xl: calc(var(--radius) * 2.6);
   --shadow-card: var(--shadow-card);
   --shadow-dialog: var(--shadow-dialog);
+  --background-image-sidebar-panel: var(--sidebar-gradient);
+  --background-image-sidebar-panel-collapsed: var(--sidebar-gradient-collapsed);
+  --background-image-aside-panel: var(--aside-gradient);
 }
 
 :root {
   --background: #f4f6fb;
   --foreground: #202224;
+  --main: #f5f5f5;
   --card: #ffffff;
   --card-foreground: #202224;
   --popover: #ffffff;
@@ -74,7 +82,9 @@
   --secondary: #eaeffe;
   --secondary-foreground: #4c6fff;
   --muted: #eef3ff;
-  --muted-foreground: #6b7a99;
+  /* Same blue-gray as the Figma #6b7a99, darkened one step so 13px body copy
+     meets WCAG AA (≥ 4.5:1) on white cards. */
+  --muted-foreground: #5f6e8e;
   --accent: #eaeffe;
   --accent-foreground: #4c6fff;
   --destructive: #f04438;
@@ -85,6 +95,8 @@
   --warning: #ff9b1f;
   --table-header: #eef3ff;
   --table-header-foreground: #3d4f6f;
+  --table-row-hover: #f8faff;
+  --surface-elevated: #ffffff;
   --chart-1: #4c6fff;
   --chart-2: #3cd856;
   --chart-3: #fa5a7d;
@@ -99,40 +111,87 @@
   --sidebar-accent-foreground: #4c6fff;
   --sidebar-border: rgba(76, 111, 255, 0.08);
   --sidebar-ring: #4c6fff;
+  --sidebar-gradient: linear-gradient(180deg, #ffffff 0%, #fbfcff 60%, #f5f8ff 100%);
+  --sidebar-gradient-collapsed: linear-gradient(180deg, #f4f7ff 0%, #e9f0ff 55%, #e2ecff 100%);
+  --aside-gradient: linear-gradient(180deg, #fbfcff 0%, #f5f8ff 100%);
   --shadow-card: 0 2px 8px rgba(17, 24, 39, 0.06);
   --shadow-dialog: 0 12px 40px rgba(17, 24, 39, 0.14);
+  --toast-success-bg: #e7f8f1;
+  --toast-success-text: #0f172a;
+  --toast-success-border: #1bc28a;
+  --toast-error-bg: #ffe9e6;
+  --toast-error-text: #0f172a;
+  --toast-error-border: #f04438;
+  --toast-warning-bg: #fff3df;
+  --toast-warning-text: #0f172a;
+  --toast-warning-border: #ff9b1f;
+  --error-surface: #fff7f6;
+  --error-border: #ffe9e6;
+  --secondary-hover: #dce4ff;
 }
 
-/* Light-only product (Angular has no dark theme). Keep `.dark` for Sonner. */
+/**
+ * Dark theme — layered navy-charcoal surfaces with brand blue accents.
+ * Hierarchy: page (#0f1219) < sidebar/main panels < cards < popovers.
+ */
 .dark {
-  --background: #f4f6fb;
-  --foreground: #202224;
-  --card: #ffffff;
-  --card-foreground: #202224;
-  --popover: #ffffff;
-  --popover-foreground: #121212;
-  --primary: #4c6fff;
+  --background: #0f1219;
+  --foreground: #e8ebf2;
+  --main: #0f1219;
+  --card: #171c28;
+  --card-foreground: #e8ebf2;
+  --popover: #1c2232;
+  --popover-foreground: #e8ebf2;
+  --primary: #6b86ff;
   --primary-foreground: #ffffff;
-  --primary-hover: #3a5cf0;
-  --primary-soft: #eaeffe;
-  --secondary: #eaeffe;
-  --secondary-foreground: #4c6fff;
-  --muted: #eef3ff;
-  --muted-foreground: #6b7a99;
-  --accent: #eaeffe;
-  --accent-foreground: #4c6fff;
-  --destructive: #f04438;
-  --border: #e6ebf3;
-  --input: #d9e0ed;
-  --ring: #4c6fff;
-  --sidebar: #ffffff;
-  --sidebar-foreground: rgba(17, 24, 39, 0.82);
-  --sidebar-primary: #4c6fff;
+  --primary-hover: #8499ff;
+  --primary-soft: rgba(107, 134, 255, 0.16);
+  --secondary: rgba(107, 134, 255, 0.14);
+  --secondary-foreground: #b4c2ff;
+  --muted: #1a2030;
+  --muted-foreground: #9aa6bf;
+  --accent: rgba(107, 134, 255, 0.14);
+  --accent-foreground: #b4c2ff;
+  --destructive: #f97066;
+  --border: rgba(148, 163, 184, 0.14);
+  --input: rgba(148, 163, 184, 0.22);
+  --ring: #6b86ff;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --table-header: #1a2030;
+  --table-header-foreground: #c2cbe0;
+  --table-row-hover: rgba(107, 134, 255, 0.08);
+  --surface-elevated: #1c2232;
+  --chart-1: #6b86ff;
+  --chart-2: #4ade80;
+  --chart-3: #fb7185;
+  --chart-4: #fb923c;
+  --chart-5: #a5b4fc;
+  --sidebar: #141925;
+  --sidebar-foreground: rgba(232, 235, 242, 0.88);
+  --sidebar-primary: #6b86ff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(76, 111, 255, 0.1);
-  --sidebar-accent-foreground: #4c6fff;
-  --sidebar-border: rgba(76, 111, 255, 0.08);
-  --sidebar-ring: #4c6fff;
+  --sidebar-accent: rgba(107, 134, 255, 0.16);
+  --sidebar-accent-foreground: #b4c2ff;
+  --sidebar-border: rgba(148, 163, 184, 0.12);
+  --sidebar-ring: #6b86ff;
+  --sidebar-gradient: linear-gradient(180deg, #171c2b 0%, #141925 55%, #111622 100%);
+  --sidebar-gradient-collapsed: linear-gradient(180deg, #1a2030 0%, #151a28 55%, #121722 100%);
+  --aside-gradient: linear-gradient(180deg, #171c28 0%, #141925 100%);
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.35);
+  --shadow-dialog: 0 16px 48px rgba(0, 0, 0, 0.55);
+  --toast-success-bg: rgba(52, 211, 153, 0.14);
+  --toast-success-text: #e8ebf2;
+  --toast-success-border: #34d399;
+  --toast-error-bg: rgba(249, 112, 102, 0.14);
+  --toast-error-text: #e8ebf2;
+  --toast-error-border: #f97066;
+  --toast-warning-bg: rgba(251, 191, 36, 0.14);
+  --toast-warning-text: #e8ebf2;
+  --toast-warning-border: #fbbf24;
+  --error-surface: rgba(249, 112, 102, 0.1);
+  --error-border: rgba(249, 112, 102, 0.28);
+  --secondary-hover: rgba(107, 134, 255, 0.24);
 }
 
 @layer base {
@@ -144,5 +203,96 @@
   }
   html {
     @apply font-sans;
+  }
+
+  /* Smooth theme switches (opt-in via .theme-transition on <html>). */
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition:
+      background-color 200ms ease,
+      border-color 200ms ease,
+      color 160ms ease,
+      box-shadow 200ms ease,
+      fill 200ms ease,
+      stroke 200ms ease !important;
+  }
+
+  /* Skeleton shimmer — a soft highlight sweep on top of the pulse. */
+  @keyframes skeleton-shimmer {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Refined scrollbars: thin, rounded, and quiet until hovered. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--muted-foreground) 35%, transparent) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background-color: color-mix(in srgb, var(--muted-foreground) 35%, transparent);
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--muted-foreground) 55%, transparent);
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Klikin AI agent highlight (Angular `.klikin-highlight`). */
+  .klikin-highlight {
+    outline: 2px solid #6366f1;
+    outline-offset: 3px;
+    border-radius: 6px;
+    animation: klikin-highlight-pulse 2.2s ease-out;
+  }
+
+  @keyframes klikin-highlight-pulse {
+    0% {
+      outline-color: #6366f1;
+      box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.45);
+    }
+    70% {
+      outline-color: rgba(99, 102, 241, 0.35);
+      box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+    }
+    100% {
+      outline-color: transparent;
+      box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+    }
+  }
+
+  @keyframes klikin-blink {
+    0%,
+    80%,
+    100% {
+      opacity: 0.3;
+    }
+    40% {
+      opacity: 1;
+    }
+  }
+
+  /* Honor the OS "reduce motion" setting: collapse decorative animations and
+     transitions to a single frame without changing end states. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

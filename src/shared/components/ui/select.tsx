@@ -54,7 +54,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex w-fit items-center justify-between gap-1.5 rounded-lg border border-input bg-white px-3 py-1.5 text-[13px] whitespace-nowrap transition-colors outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+        "flex w-fit items-center justify-between gap-1.5 rounded-lg border border-input bg-card px-3 py-1.5 text-[13px] whitespace-nowrap transition-colors outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
         className,
       )}
       {...props}
@@ -106,7 +106,7 @@ function SelectContent({
             data-slot="select-viewport"
             data-position={position}
             className={cn(
-              "p-1 data-[position=popper]:h-(--radix-select-trigger-height) data-[position=popper]:w-full data-[position=popper]:min-w-(--radix-select-trigger-width) [&:has([data-slot=select-item])_[data-slot=menu-search-empty]]:hidden",
+              "p-1 data-[position=popper]:h-(--radix-select-trigger-height) data-[position=popper]:w-full data-[position=popper]:min-w-(--radix-select-trigger-width) [&:has([data-slot=select-item]:not([data-filtered]))_[data-slot=menu-search-empty]]:hidden",
               position === "popper" && "",
             )}
           >
@@ -143,14 +143,16 @@ function SelectItem({
   const label = textValue ?? getNodeText(children);
   const visible = !enabled || matchesMenuFilter(query, label, props.value);
 
-  if (!visible) return null;
-
+  // Keep items mounted while filtering — unmounting steals focus from the search input
+  // (Radix Select re-focuses the collection on each keystroke).
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
+      data-filtered={visible ? undefined : ""}
       textValue={textValue ?? label}
+      hidden={!visible}
       className={cn(
-        "relative flex min-h-7 w-full cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-[13px] outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "relative flex min-h-7 w-full cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-[13px] outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 data-filtered:hidden [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className,
       )}
       {...props}

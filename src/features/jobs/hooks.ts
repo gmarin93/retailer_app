@@ -327,6 +327,8 @@ export function useEditJobAnswer(jobId: number) {
   return useMutation({
     mutationFn: async (args: { questionResponseId: number; answerData: unknown }) => {
       const patched = await patchQuestionResponse(args.questionResponseId, args.answerData);
+      // Prefer server answer_data; fall back to the payload we just sent.
+      const answerData = patched.answer_data ?? args.answerData;
       for (const view of DETAIL_VIEWS) {
         queryClient.setQueryData<DetailedJob>(jobKeys.detail(jobId, view), (job) =>
           job
@@ -336,7 +338,7 @@ export function useEditJobAnswer(jobId: number) {
                   ...request,
                   job_responses: request.job_responses.map((response) =>
                     response.id === args.questionResponseId
-                      ? { ...response, answer_data: patched.answer_data }
+                      ? { ...response, answer_data: answerData }
                       : response,
                   ),
                 })),

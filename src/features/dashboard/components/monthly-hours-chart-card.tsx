@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { LoadingState } from "@/shared/components/loading-state";
+import { chartTheme } from "@/shared/lib/theme";
 import type { ListableCustomer } from "@/shared/services/entities/customers";
 import type { MonthlyHoursDatum } from "../schemas";
 
@@ -82,14 +83,25 @@ export function MonthlyHoursChartCard({
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip formatter={(value) => [`${Math.round(Number(value))} h`, "Hours"]} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke={chartTheme.gridStroke}
+                />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 12, fill: chartTheme.tickFill }}
+                  interval={0}
+                />
+                <YAxis tick={{ fontSize: 12, fill: chartTheme.tickFill }} />
+                <Tooltip
+                  contentStyle={chartTheme.tooltip}
+                  formatter={(value) => [`${Math.round(Number(value))} h`, "Hours"]}
+                />
                 <Bar
                   dataKey="value"
                   name="Complete hours"
-                  fill="#4c6fff"
+                  fill="var(--chart-1)"
                   radius={[4, 4, 0, 0]}
                 />
               </BarChart>

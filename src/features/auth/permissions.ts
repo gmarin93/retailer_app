@@ -73,3 +73,16 @@ export function canDownloadJobPhotos(role: UserRole): boolean {
 export function isCustomerAccount(role: UserRole): boolean {
   return role === UserRole.CUSTOMER_ACCOUNT;
 }
+
+/** Elevated / manager / supervisor / field rep may view profile photos and contact info. */
+export function canViewUserProfiles(role: UserRole): boolean {
+  return (
+    isElevatedOrManagerOrSupervisor(role) ||
+    role === UserRole.FIELD_REP
+  );
+}
+
+/** Elevated / manager may see administrative user notes on the profile card. */
+export function canSeeUserNotes(role: UserRole): boolean {
+  return isElevatedOrManager(role);
+}

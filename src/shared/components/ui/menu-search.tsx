@@ -71,7 +71,7 @@ export function MenuSearchInput({
 
   React.useEffect(() => {
     if (!enabled) return;
-    const id = window.setTimeout(() => inputRef.current?.focus(), 10);
+    const id = window.setTimeout(() => inputRef.current?.focus(), 0);
     return () => window.clearTimeout(id);
   }, [enabled]);
 
@@ -81,7 +81,12 @@ export function MenuSearchInput({
     <div
       data-slot="menu-search"
       className={cn("sticky top-0 z-20 border-b border-border bg-popover p-2", className)}
-      onPointerDown={(event) => event.preventDefault()}
+      onPointerDown={(event) => {
+        // Keep the menu open when interacting with the search chrome, but do not
+        // preventDefault on the input itself — that blocks caret/focus.
+        if (event.target === inputRef.current) return;
+        event.preventDefault();
+      }}
     >
       <div className="relative">
         <HugeiconsIcon
@@ -91,12 +96,19 @@ export function MenuSearchInput({
         />
         <input
           ref={inputRef}
-          type="search"
+          type="text"
           value={query}
           placeholder={placeholder}
           aria-label={placeholder}
-          className="h-8 w-full rounded-md border border-input bg-white py-1 pr-2 pl-8 text-[13px] outline-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          className="h-8 w-full rounded-md border border-input bg-card py-1 pr-2 pl-8 text-[13px] outline-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25"
           onChange={(event) => setQuery(event.target.value)}
+          onKeyDownCapture={(event) => {
+            // Capture phase: Radix typeahead listens on the content and steals focus.
+            event.stopPropagation();
+          }}
           onKeyDown={(event) => {
             event.stopPropagation();
             if (event.key === "Escape" && query) {
@@ -104,6 +116,7 @@ export function MenuSearchInput({
               setQuery("");
             }
           }}
+          onKeyUp={(event) => event.stopPropagation()}
         />
       </div>
     </div>

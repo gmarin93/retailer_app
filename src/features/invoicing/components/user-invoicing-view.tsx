@@ -1,17 +1,23 @@
 "use client";
 
 import {
+  Calendar03Icon,
   Cancel01Icon,
+  Cash01Icon,
+  Clock01Icon,
   Delete02Icon,
   Download01Icon,
   FileDownloadIcon,
   PlayIcon,
+  ReceiptTextIcon,
   Search01Icon,
+  UserGroupIcon,
 } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/shared/components/ui/button";
+import { Card, CardContent } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
 import {
   Table,
@@ -24,10 +30,24 @@ import {
 import { ConfirmDialog } from "@/shared/components/confirm-dialog";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
+import { cn } from "@/shared/lib/utils";
 import { downloadLegacySummary, fetchAllUserInvoices, runUserInvoices } from "../api";
 import type { ListableUser, ListableUserInvoice } from "../schemas";
 import { UserInvoicingRunDialog, type RunDialogResult } from "./user-invoicing-run-dialog";
-import { UserInvoicingSearchDialog, type SearchDialogResult } from "./user-invoicing-search-dialog";
+import {
+  UserInvoicingSearchDialog,
+  type SearchDialogResult,
+} from "./user-invoicing-search-dialog";
+
+type StatTone = "blue" | "violet" | "amber" | "teal" | "green";
+
+const STAT_TONES: Record<StatTone, string> = {
+  blue: "bg-primary/12 text-primary",
+  violet: "bg-violet-500/12 text-violet-600 dark:text-violet-300",
+  amber: "bg-amber-500/14 text-amber-600 dark:text-amber-300",
+  teal: "bg-teal-500/12 text-teal-600 dark:text-teal-300",
+  green: "bg-green-600/12 text-green-600 dark:text-green-400",
+};
 
 function formatMinutes(minutes: number | null | undefined): string {
   if (!minutes) return "0.00h";
@@ -59,7 +79,15 @@ export function UserInvoicingView() {
     if (!filter) return true;
     const q = filter.toLowerCase();
     const repId = inv.user?.rep_no || inv.user?.username || "";
-    return [inv.id, inv.batch_id, inv.billing_date, inv.period_end, inv.user?.first_name, inv.user?.last_name, repId]
+    return [
+      inv.id,
+      inv.batch_id,
+      inv.billing_date,
+      inv.period_end,
+      inv.user?.first_name,
+      inv.user?.last_name,
+      repId,
+    ]
       .join(" ")
       .toLowerCase()
       .includes(q);
@@ -150,7 +178,7 @@ export function UserInvoicingView() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader
         title="User Invoicing"
         actions={
@@ -159,12 +187,22 @@ export function UserInvoicingView() {
               <HugeiconsIcon icon={PlayIcon} aria-hidden className="size-4" />
               Run
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setShowSearchDialog(true)} disabled={isRunning}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowSearchDialog(true)}
+              disabled={isRunning}
+            >
               <HugeiconsIcon icon={Search01Icon} aria-hidden className="size-4" />
               Search
             </Button>
             {invoices.length > 0 && (
-              <Button size="sm" variant="outline" onClick={handleDownloadLegacySummary} disabled={!!progressLabel}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleDownloadLegacySummary}
+                disabled={!!progressLabel}
+              >
                 <HugeiconsIcon icon={Download01Icon} aria-hidden className="size-4" />
                 Legacy Summary
               </Button>
@@ -190,36 +228,126 @@ export function UserInvoicingView() {
 
       {/* Errors */}
       {errors.length > 0 && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-1">
+        <div className="space-y-1 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
           {errors.map((e, i) => (
-            <p key={i} className="text-xs text-destructive">{e}</p>
+            <p key={i} className="text-xs text-destructive">
+              {e}
+            </p>
           ))}
         </div>
       )}
 
-      {/* Stats + filter row */}
       {invoices.length > 0 && (
-        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-          <span>{stats.total} invoices · {stats.reps} reps · {stats.visits} visits · {stats.hours.toFixed(1)}h · {formatCurrency(stats.billed)}</span>
-          <div className="flex-1" />
-          <div className="relative w-56">
-            <HugeiconsIcon icon={Search01Icon} aria-hidden className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              placeholder="Filter results…"
-              className="pl-8 h-8"
-            />
-            {filter && (
-              <button type="button" onClick={() => setFilter("")} className="absolute right-2 top-1/2 -translate-y-1/2">
-                <HugeiconsIcon icon={Cancel01Icon} className="size-3.5 text-muted-foreground" />
-              </button>
-            )}
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {(
+              [
+                {
+                  label: "Invoices",
+                  value: stats.total,
+                  icon: ReceiptTextIcon,
+                  tone: "blue",
+                },
+                {
+                  label: "Reps",
+                  value: stats.reps,
+                  icon: UserGroupIcon,
+                  tone: "violet",
+                },
+                {
+                  label: "Visits",
+                  value: stats.visits,
+                  icon: Calendar03Icon,
+                  tone: "teal",
+                },
+                {
+                  label: "Hours",
+                  value: `${stats.hours.toFixed(1)}h`,
+                  icon: Clock01Icon,
+                  tone: "amber",
+                },
+                {
+                  label: "Total Billed",
+                  value: formatCurrency(stats.billed),
+                  icon: Cash01Icon,
+                  tone: "green",
+                },
+              ] as const satisfies ReadonlyArray<{
+                label: string;
+                value: string | number;
+                icon: IconSvgElement;
+                tone: StatTone;
+              }>
+            ).map((stat) => (
+              <Card
+                key={stat.label}
+                className="shadow-[0_2px_8px_rgba(17,24,39,0.06)]"
+              >
+                <CardContent className="flex items-center gap-3 px-4 py-3.5">
+                  <span
+                    className={cn(
+                      "inline-flex size-[42px] shrink-0 items-center justify-center rounded-xl",
+                      STAT_TONES[stat.tone],
+                    )}
+                  >
+                    <HugeiconsIcon
+                      icon={stat.icon}
+                      aria-hidden
+                      className="size-[22px]"
+                    />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+                      {stat.label}
+                    </span>
+                    <span className="block truncate text-xl font-bold tracking-tight tabular-nums text-foreground">
+                      {stat.value}
+                    </span>
+                  </span>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-          <Button size="sm" variant="ghost" onClick={() => { setInvoices([]); setErrors([]); setFilter(""); }}>
-            Clear
-          </Button>
-        </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative w-56">
+              <HugeiconsIcon
+                icon={Search01Icon}
+                aria-hidden
+                className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder="Filter results…"
+                className="h-8 pl-8"
+              />
+              {filter && (
+                <button
+                  type="button"
+                  onClick={() => setFilter("")}
+                  className="absolute top-1/2 right-2 -translate-y-1/2"
+                >
+                  <HugeiconsIcon
+                    icon={Cancel01Icon}
+                    className="size-3.5 text-muted-foreground"
+                  />
+                </button>
+              )}
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setInvoices([]);
+                setErrors([]);
+                setFilter("");
+              }}
+            >
+              Clear
+            </Button>
+          </div>
+        </>
       )}
 
       {/* Table */}
@@ -249,11 +377,21 @@ export function UserInvoicingView() {
                   <TableCell className="text-xs">{inv.billing_date}</TableCell>
                   <TableCell className="text-xs">{inv.period_end ?? "—"}</TableCell>
                   <TableCell className="text-xs">{repLabel(inv.user)}</TableCell>
-                  <TableCell className="text-xs text-right">{inv.count_job_reports ?? 0}</TableCell>
-                  <TableCell className="text-xs text-right">{formatMinutes(inv.total_minutes)}</TableCell>
-                  <TableCell className="text-xs text-right">{formatCurrency(inv.subtotal)}</TableCell>
-                  <TableCell className="text-xs text-right">{formatCurrency(inv.taxes)}</TableCell>
-                  <TableCell className="text-xs text-right font-semibold">{formatCurrency(inv.total)}</TableCell>
+                  <TableCell className="text-right text-xs">
+                    {inv.count_job_reports ?? 0}
+                  </TableCell>
+                  <TableCell className="text-right text-xs">
+                    {formatMinutes(inv.total_minutes)}
+                  </TableCell>
+                  <TableCell className="text-right text-xs">
+                    {formatCurrency(inv.subtotal)}
+                  </TableCell>
+                  <TableCell className="text-right text-xs">
+                    {formatCurrency(inv.taxes)}
+                  </TableCell>
+                  <TableCell className="text-right text-xs font-semibold">
+                    {formatCurrency(inv.total)}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       {inv.file_location && (
@@ -271,7 +409,7 @@ export function UserInvoicingView() {
                         type="button"
                         title="Delete"
                         onClick={() => setDeleteTarget(inv)}
-                        className="rounded p-1 hover:bg-muted text-destructive"
+                        className="rounded p-1 text-destructive hover:bg-muted"
                       >
                         <HugeiconsIcon icon={Delete02Icon} className="size-4" />
                       </button>
@@ -304,7 +442,9 @@ export function UserInvoicingView() {
 
       <ConfirmDialog
         open={deleteTarget !== null}
-        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
         title="Delete User Invoice"
         question={`Delete User Invoice #${deleteTarget?.id} for ${deleteTarget?.user?.first_name} ${deleteTarget?.user?.last_name}? This cannot be undone.`}
         destructive

@@ -9,7 +9,6 @@ import { UserRole } from "@/features/auth/types";
 export type JobsColumnKey =
   | "user"
   | "id"
-  | "rep_no"
   | "cycle"
   | "customer"
   | "program"
@@ -27,7 +26,6 @@ export type JobsColumnKey =
 const ELEVATED: JobsColumnKey[] = [
   "user",
   "id",
-  "rep_no",
   "cycle",
   "customer",
   "program",
@@ -69,6 +67,21 @@ const BASIC: JobsColumnKey[] = [
   "status_code",
 ];
 
+/**
+ * Narrow-viewport whitelist (Angular `MOBILE_VISIBLE`), plus `user` so the
+ * avatar stays visible as requested for the itinerary-style tables.
+ */
+export const MOBILE_VISIBLE: JobsColumnKey[] = [
+  "user",
+  "id",
+  "cycle",
+  "customer",
+  "program",
+  "store",
+  "status",
+  "completedOn",
+];
+
 /** Role-based column set; archives can hide status columns. */
 export function jobsColumnsForRole(
   role: UserRole,
@@ -84,4 +97,16 @@ export function jobsColumnsForRole(
     columns = columns.filter((key) => key !== "status" && key !== "status_code");
   }
   return columns;
+}
+
+/** Intersect role columns with the mobile whitelist, preserving role order. */
+export function jobsColumnsForViewport(
+  role: UserRole,
+  isMobile: boolean,
+  options?: { showStatus?: boolean },
+): JobsColumnKey[] {
+  const columns = jobsColumnsForRole(role, options);
+  if (!isMobile) return columns;
+  const allowed = new Set(MOBILE_VISIBLE);
+  return columns.filter((key) => allowed.has(key));
 }

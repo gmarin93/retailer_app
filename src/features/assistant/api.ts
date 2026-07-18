@@ -4,8 +4,15 @@ import { useSessionStore } from "@/stores/session-store";
 import {
   klikinChatResponseSchema,
   klikinConfirmResponseSchema,
+  klikinReportEmailResultSchema,
+  klikinReportFileSchema,
+  klikinReportPreviewSchema,
   type KlikinChatResponse,
   type KlikinConfirmResponse,
+  type KlikinReportEmailResult,
+  type KlikinReportFile,
+  type KlikinReportFormat,
+  type KlikinReportPreview,
 } from "./schemas";
 
 function assistantBase(): string {
@@ -83,5 +90,54 @@ export async function postAssistantConfirm(
     "/v1/actions/confirm",
     { operation, params },
     (data) => klikinConfirmResponseSchema.parse(data),
+  );
+}
+
+export async function previewAssistantReport(args: {
+  history: unknown[];
+  reportType: string;
+  options: Record<string, boolean>;
+  instructions?: string;
+}): Promise<KlikinReportPreview> {
+  return assistantPost(
+    "/v1/reports/preview",
+    {
+      history: args.history,
+      report_type: args.reportType,
+      options: args.options,
+      instructions: args.instructions || null,
+    },
+    (data) => klikinReportPreviewSchema.parse(data),
+  );
+}
+
+export async function renderAssistantReport(
+  reportId: string,
+  format: KlikinReportFormat,
+): Promise<KlikinReportFile> {
+  return assistantPost(
+    "/v1/reports/render",
+    { report_id: reportId, format },
+    (data) => klikinReportFileSchema.parse(data),
+  );
+}
+
+export async function emailAssistantReport(args: {
+  reportId: string;
+  format: KlikinReportFormat;
+  to: string[];
+  subject?: string;
+  message?: string;
+}): Promise<KlikinReportEmailResult> {
+  return assistantPost(
+    "/v1/reports/email",
+    {
+      report_id: args.reportId,
+      format: args.format,
+      to: args.to,
+      subject: args.subject || null,
+      message: args.message || null,
+    },
+    (data) => klikinReportEmailResultSchema.parse(data),
   );
 }

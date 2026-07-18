@@ -110,10 +110,22 @@ export type PlanReadinessSummary = z.infer<typeof readinessSummarySchema>;
 export const readinessDetailSchema = z.looseObject({
   plan_id: z.number(),
   readiness: z.string().catch("warning"),
+  is_survey: z.boolean().catch(false),
   expected_jobs: z.number().catch(0),
+  assigned_jobs: z.number().catch(0),
   can_allocate: z.boolean().catch(false),
   cost: z.number().nullish(),
   hours: z.number().nullish(),
+  /** Already a percentage (e.g. 97.2), rounded server-side. */
+  coverage_pct: z.number().nullish(),
+  budget: z
+    .looseObject({
+      customer_budget: z.number().catch(0),
+      customer_planned: z.number().catch(0),
+      customer_remaining: z.number().catch(0),
+      over_budget: z.boolean().catch(false),
+    })
+    .nullish(),
   warnings: z
     .array(
       z.looseObject({
@@ -129,6 +141,17 @@ export const readinessDetailSchema = z.looseObject({
         id: z.number().optional(),
         title: z.string().catch(""),
         store_no: z.union([z.string(), z.number()]).nullish(),
+        retailer: z.string().catch(""),
+      }),
+    )
+    .catch([]),
+  rep_workload_preview: z
+    .array(
+      z.looseObject({
+        user_id: z.number(),
+        name: z.string().catch(""),
+        rep_no: z.number().nullish(),
+        jobs: z.number().catch(0),
       }),
     )
     .catch([]),

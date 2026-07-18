@@ -12,9 +12,9 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground shadow-none hover:bg-primary-hover",
         outline:
-          "border-border bg-white hover:bg-primary-soft hover:text-primary aria-expanded:bg-primary-soft aria-expanded:text-primary",
+          "border-border bg-card hover:bg-primary-soft hover:text-primary aria-expanded:bg-primary-soft aria-expanded:text-primary",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-[#dce4ff] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+          "bg-secondary text-secondary-foreground hover:bg-[var(--secondary-hover)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
           "hover:bg-primary-soft hover:text-primary aria-expanded:bg-primary-soft aria-expanded:text-primary",
         destructive:

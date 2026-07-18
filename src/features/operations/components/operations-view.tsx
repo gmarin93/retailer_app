@@ -3,6 +3,7 @@
 import {
   Alert02Icon,
   ArrowLeft01Icon,
+  Building02Icon,
   Cancel01Icon,
   CheckmarkCircle02Icon,
   Clock01Icon,
@@ -14,8 +15,9 @@ import {
   UserGroupIcon,
   Calendar03Icon,
   ClipboardIcon,
+  Store01Icon,
 } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { useMemo, useState } from "react";
 import { useSession } from "@/features/auth/hooks";
 import { canBulkEditJobs } from "@/features/auth/permissions";
@@ -28,8 +30,8 @@ import {
   type ListableJob,
 } from "@/features/jobs/schemas";
 import { Button } from "@/shared/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
 import { Card, CardContent } from "@/shared/components/ui/card";
+import { UserAvatar } from "@/shared/components/user/user-avatar";
 import { Input } from "@/shared/components/ui/input";
 import {
   Select,
@@ -69,6 +71,53 @@ import {
 } from "../schemas";
 
 const NONE = "__none__";
+
+type StatTone = "blue" | "violet" | "amber" | "red" | "green" | "teal";
+
+const STAT_TONES: Record<StatTone, string> = {
+  blue: "bg-primary/12 text-primary",
+  violet: "bg-violet-500/12 text-violet-600 dark:text-violet-300",
+  amber: "bg-amber-500/14 text-amber-600 dark:text-amber-300",
+  red: "bg-[#e85a3a]/12 text-[#e85a3a]",
+  green: "bg-green-600/12 text-green-600 dark:text-green-400",
+  teal: "bg-teal-500/12 text-teal-600 dark:text-teal-300",
+};
+
+/** Angular `operations-stat` / `itinerary-stat` KPI tile. */
+function OperationsStatCard({
+  label,
+  value,
+  icon,
+  tone,
+}: {
+  label: string;
+  value: string | number;
+  icon: IconSvgElement;
+  tone: StatTone;
+}) {
+  return (
+    <Card className="shadow-[0_2px_8px_rgba(17,24,39,0.06)]">
+      <CardContent className="flex items-center gap-3 px-4 py-3.5">
+        <span
+          className={cn(
+            "inline-flex size-[42px] shrink-0 items-center justify-center rounded-xl",
+            STAT_TONES[tone],
+          )}
+        >
+          <HugeiconsIcon icon={icon} aria-hidden="true" className="size-[22px]" />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+            {label}
+          </span>
+          <span className="block text-xl font-bold tracking-tight tabular-nums text-foreground">
+            {value}
+          </span>
+        </span>
+      </CardContent>
+    </Card>
+  );
+}
 
 /** Angular `itineraries-table-week-cell` icon + tooltip per threshold. */
 const WEEK_ICON: Record<WeekStatus, { icon: typeof Tick02Icon; className: string; title: string }> =
@@ -117,13 +166,6 @@ function WeekCells({ row, weekCount }: { row: UserItinerary; weekCount: number }
       })}
     </>
   );
-}
-
-function userInitials(user: UserItinerary["user"]): string {
-  const initials = [user.first_name, user.last_name]
-    .map((part) => part?.trim().charAt(0) ?? "")
-    .join("");
-  return (initials || user.username.slice(0, 2)).toUpperCase() || "?";
 }
 
 function UserItineraryDetail({
@@ -216,20 +258,36 @@ function UserItineraryDetail({
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {[
-          { label: "Visits", value: row.count },
-          { label: "Planned time", value: formatMinutes(row.minutes) },
-          { label: "Stores", value: stores },
-          { label: "Customers", value: customers },
-          { label: "Outstanding", value: outstanding },
-        ].map((stat) => (
-          <Card key={stat.label}>
-            <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
-              <p className="text-lg font-semibold tabular-nums">{stat.value}</p>
-            </CardContent>
-          </Card>
-        ))}
+        <OperationsStatCard
+          label="Visits"
+          value={row.count}
+          icon={ClipboardIcon}
+          tone="blue"
+        />
+        <OperationsStatCard
+          label="Planned Time"
+          value={formatMinutes(row.minutes)}
+          icon={Clock01Icon}
+          tone="amber"
+        />
+        <OperationsStatCard
+          label="Stores"
+          value={stores}
+          icon={Store01Icon}
+          tone="violet"
+        />
+        <OperationsStatCard
+          label="Customers"
+          value={customers}
+          icon={Building02Icon}
+          tone="teal"
+        />
+        <OperationsStatCard
+          label="Outstanding"
+          value={outstanding}
+          icon={HourglassIcon}
+          tone="red"
+        />
       </div>
 
       {jobsQuery.isLoading ? (
@@ -482,59 +540,36 @@ export function OperationsView() {
 
       {hasItineraries && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {[
-            {
-              label: "Reps",
-              value: ops.aggregates.repCount,
-              icon: UserGroupIcon,
-              tile: "bg-blue-100 text-blue-600",
-            },
-            {
-              label: "Total Hours",
-              value: formatHours(ops.aggregates.totalHours),
-              icon: Clock01Icon,
-              tile: "bg-amber-100 text-amber-600",
-            },
-            {
-              label: "Visits in Planning",
-              value: ops.aggregates.totalPlannedVisits,
-              icon: Calendar03Icon,
-              tile: "bg-violet-100 text-violet-600",
-            },
-            {
-              label: "Reps to Publish",
-              value: ops.aggregates.repsToPublish,
-              icon: HourglassIcon,
-              tile: "bg-red-100 text-red-600",
-            },
-            {
-              label: "Fully Published",
-              value: ops.aggregates.repsFullyPublished,
-              icon: CheckmarkCircle02Icon,
-              tile: "bg-green-100 text-green-600",
-            },
-          ].map((stat) => (
-            <Card key={stat.label}>
-              <CardContent className="flex items-center gap-3 pt-4">
-                <span
-                  className={cn(
-                    "flex size-9 shrink-0 items-center justify-center rounded-lg",
-                    stat.tile,
-                  )}
-                >
-                  <HugeiconsIcon icon={stat.icon} aria-hidden="true" className="size-5" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                    {stat.label}
-                  </span>
-                  <span className="block text-lg font-semibold tabular-nums">
-                    {stat.value}
-                  </span>
-                </span>
-              </CardContent>
-            </Card>
-          ))}
+          <OperationsStatCard
+            label="Reps"
+            value={ops.aggregates.repCount}
+            icon={UserGroupIcon}
+            tone="blue"
+          />
+          <OperationsStatCard
+            label="Total Hours"
+            value={formatHours(ops.aggregates.totalHours)}
+            icon={Clock01Icon}
+            tone="amber"
+          />
+          <OperationsStatCard
+            label="Visits in Planning"
+            value={ops.aggregates.totalPlannedVisits}
+            icon={Calendar03Icon}
+            tone="violet"
+          />
+          <OperationsStatCard
+            label="Reps to Publish"
+            value={ops.aggregates.repsToPublish}
+            icon={HourglassIcon}
+            tone="red"
+          />
+          <OperationsStatCard
+            label="Fully Published"
+            value={ops.aggregates.repsFullyPublished}
+            icon={CheckmarkCircle02Icon}
+            tone="green"
+          />
         </div>
       )}
 
@@ -647,13 +682,8 @@ export function OperationsView() {
                           />
                         </TableCell>
                       )}
-                      <TableCell>
-                        <Avatar title={formatUserName(row.user)}>
-                          {row.user.avatar && (
-                            <AvatarImage src={row.user.avatar} alt="" />
-                          )}
-                          <AvatarFallback>{userInitials(row.user)}</AvatarFallback>
-                        </Avatar>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <UserAvatar user={row.user} size={32} />
                       </TableCell>
                       <TableCell className="tabular-nums">
                         {row.user.rep_no ?? ""}

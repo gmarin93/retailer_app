@@ -34,9 +34,9 @@ export const CHART_SERIES_LABEL: Record<ChartSeriesKey, string> = {
 };
 
 export const CHART_SERIES_COLOR: Record<ChartSeriesKey, string> = {
-  complete: "#3cd856",
-  overdue: "#fa5a7d",
-  in_progress: "#ff947a",
+  complete: "var(--chart-2)",
+  overdue: "var(--chart-3)",
+  in_progress: "var(--chart-4)",
 };
 
 export const CHART_SERIES_KEYS: ChartSeriesKey[] = ["complete", "overdue", "in_progress"];

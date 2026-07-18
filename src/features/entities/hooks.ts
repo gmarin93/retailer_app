@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ApiError } from "@/shared/services/api";
+import { patchEntity } from "./api";
 import {
   fetchStoreDetailV2,
   patchStoreAvatar,
@@ -43,20 +44,42 @@ export function useEntitySearch(
 }
 
 export function usePatchStoreAvatar() {
+  return usePatchEntityAvatar("store");
+}
+
+/** Upload avatar/logo for users, customers, retailers (v0) or stores (v2). */
+export function usePatchEntityAvatar(kind: "user" | "customer" | "retailer" | "store") {
   const queryClient = useQueryClient();
+  const route =
+    kind === "user"
+      ? "users"
+      : kind === "customer"
+        ? "customers"
+        : kind === "retailer"
+          ? "retailers"
+          : "stores";
+  const label = kind === "user" ? "Avatar" : "Logo";
+
   return useMutation({
-    mutationFn: ({ id, file }: { id: number; file: File }) => patchStoreAvatar(id, file),
+    mutationFn: ({ id, file }: { id: number; file: File }) => {
+      if (kind === "store") return patchStoreAvatar(id, file);
+      return patchEntity(route, id, { avatar: file });
+    },
     onSuccess: (_data, vars) => {
-      toast.success("Store logo updated");
-      void queryClient.invalidateQueries({ queryKey: entityKeys.list("stores") });
-      void queryClient.invalidateQueries({ queryKey: entityKeys.storeDetail(vars.id) });
+      toast.success(`${label} updated`);
+      void queryClient.invalidateQueries({ queryKey: entityKeys.list(route) });
       void queryClient.invalidateQueries({
-        queryKey: [...entityKeys.all, "stores", "detail", vars.id],
+        queryKey: [...entityKeys.all, route, "detail", vars.id],
       });
+      if (kind === "store") {
+        void queryClient.invalidateQueries({ queryKey: entityKeys.storeDetail(vars.id) });
+      }
     },
     onError: (error) =>
       toast.error(
-        error instanceof ApiError ? `Failed to update logo: ${error.message}` : "Failed to update logo",
+        error instanceof ApiError
+          ? `Failed to update ${label.toLowerCase()}: ${error.message}`
+          : `Failed to update ${label.toLowerCase()}`,
       ),
   });
 }

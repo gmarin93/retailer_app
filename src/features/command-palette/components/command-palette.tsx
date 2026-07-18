@@ -1,11 +1,27 @@
 "use client";
 
-import { Search01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  ArrowDown01Icon,
+  ArrowTurnBackwardIcon,
+  ArrowUp01Icon,
+  Briefcase01Icon,
+  Building01Icon,
+  Calendar03Icon,
+  Cancel01Icon,
+  DashboardSquare01Icon,
+  Layers01Icon,
+  Logout01Icon,
+  ClipboardIcon,
+  Search01Icon,
+  ShoppingBag01Icon,
+  Store01Icon,
+  UserIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useLogout, useSession } from "@/features/auth/hooks";
-import { getPagesForRole } from "@/shared/constants/pages";
+import { getPagesForRole, PAGE_MAP } from "@/shared/constants/pages";
 import {
   Dialog,
   DialogContent,
@@ -17,8 +33,44 @@ import { Input } from "@/shared/components/ui/input";
 import { cn } from "@/shared/lib/utils";
 import { useUiStore } from "@/stores/ui-store";
 import { useCommandPaletteSearch } from "../hooks";
-import type { PaletteItem } from "../types";
+import type { PaletteGroup, PaletteItem } from "../types";
 import { pushRecent } from "../utils";
+
+const GROUP_ICONS: Partial<Record<PaletteGroup, IconSvgElement>> = {
+  Jobs: Briefcase01Icon,
+  Plans: ClipboardIcon,
+  Stores: Store01Icon,
+  Reps: UserIcon,
+  Customers: Building01Icon,
+  Retailers: ShoppingBag01Icon,
+  Programs: Layers01Icon,
+  Cycles: Calendar03Icon,
+  Actions: Logout01Icon,
+  Pages: DashboardSquare01Icon,
+  Recent: Search01Icon,
+};
+
+function itemIcon(item: PaletteItem): IconSvgElement {
+  if (item.group === "Pages") {
+    const pageId = item.href?.replace(/^\//, "");
+    const page = pageId
+      ? Object.values(PAGE_MAP).find((entry) => entry.id === pageId)
+      : undefined;
+    if (page) return page.icon;
+  }
+  // Recents keep their original entity id (`plan-123`, `job-456`) — use that for icons.
+  if (item.group === "Recent") {
+    if (item.id.startsWith("plan-")) return ClipboardIcon;
+    if (item.id.startsWith("job-")) return Briefcase01Icon;
+    if (item.id.startsWith("stores-") || item.id.startsWith("store-")) return Store01Icon;
+    if (item.id.startsWith("reps-") || item.id.startsWith("users-")) return UserIcon;
+    if (item.id.startsWith("customers-")) return Building01Icon;
+    if (item.id.startsWith("retailers-")) return ShoppingBag01Icon;
+    if (item.id.startsWith("programs-")) return Layers01Icon;
+    if (item.id.startsWith("cycles-")) return Calendar03Icon;
+  }
+  return GROUP_ICONS[item.group] ?? Search01Icon;
+}
 
 /**
  * Global ⌘/Ctrl+K palette: pages, logout, recents, and role-gated entity search.
@@ -38,7 +90,6 @@ export function CommandPalette() {
   const pages = session ? getPagesForRole(session.user.role) : [];
   const { items, searching } = useCommandPaletteSearch(query, pages, session?.user.id ?? 0);
 
-  // Keep the highlight in range when results shrink.
   const safeActiveIndex = items.length === 0 ? 0 : Math.min(activeIndex, items.length - 1);
 
   useEffect(() => {
@@ -102,13 +153,13 @@ export function CommandPalette() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-xl">
         <DialogHeader className="sr-only">
-          <DialogTitle>Command palette</DialogTitle>
-          <DialogDescription>Search pages and records</DialogDescription>
+          <DialogTitle>Smart Search</DialogTitle>
+          <DialogDescription>Search pages, visits, stores, and plans</DialogDescription>
         </DialogHeader>
-        <div className="flex items-center gap-2 border-b px-3">
-          <HugeiconsIcon icon={Search01Icon} className="size-4 text-muted-foreground" />
+        <div className="flex items-center gap-2 border-b px-3 py-1">
+          <HugeiconsIcon icon={Search01Icon} className="size-4 shrink-0 text-muted-foreground" />
           <Input
             ref={inputRef}
             value={query}
@@ -116,8 +167,8 @@ export function CommandPalette() {
               setQuery(e.target.value);
               setActiveIndex(0);
             }}
-            placeholder="Search pages, visits, stores…"
-            className="border-0 shadow-none focus-visible:ring-0"
+            placeholder="Search pages, stores, reps, customers…"
+            className="h-11 border-0 shadow-none focus-visible:ring-0"
             aria-controls={listId}
             aria-activedescendant={
               items[safeActiveIndex] ? `${listId}-${safeActiveIndex}` : undefined
@@ -135,16 +186,21 @@ export function CommandPalette() {
               }
             }}
           />
+          <kbd className="rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground uppercase">
+            esc
+          </kbd>
         </div>
-        <div id={listId} role="listbox" className="max-h-80 overflow-auto p-2">
+        <div id={listId} role="listbox" className="max-h-[28rem] overflow-auto p-2">
           {items.length === 0 ? (
             <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-              {searching ? "Searching…" : "No results"}
+              {searching ? "Searching…" : "No results found"}
             </p>
           ) : (
             grouped.map(([group, groupItems]) => (
               <div key={group} className="mb-2">
-                <p className="px-2 py-1 text-xs font-medium text-muted-foreground">{group}</p>
+                <p className="px-2 py-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                  {group}
+                </p>
                 <ul>
                   {groupItems.map((item) => {
                     const index = items.indexOf(item);
@@ -157,16 +213,43 @@ export function CommandPalette() {
                           role="option"
                           aria-selected={active}
                           className={cn(
-                            "flex w-full flex-col rounded-md px-2 py-2 text-left text-sm",
-                            active ? "bg-accent text-accent-foreground" : "hover:bg-accent/60",
+                            "flex w-full items-center gap-3 rounded-lg px-2.5 py-2.5 text-left text-sm transition-colors",
+                            active
+                              ? "bg-primary/10 text-foreground"
+                              : "hover:bg-accent/60",
                           )}
                           onMouseEnter={() => setActiveIndex(index)}
                           onClick={() => runItem(item)}
                         >
-                          <span className="font-medium">{item.title}</span>
-                          {item.subtitle && (
-                            <span className="text-xs text-muted-foreground">{item.subtitle}</span>
-                          )}
+                          <span
+                            className={cn(
+                              "inline-flex size-8 shrink-0 items-center justify-center rounded-lg",
+                              active
+                                ? "bg-primary/15 text-primary"
+                                : "bg-muted text-muted-foreground",
+                            )}
+                          >
+                            <HugeiconsIcon
+                              icon={itemIcon(item)}
+                              className="size-4"
+                              aria-hidden="true"
+                            />
+                          </span>
+                          <span className="flex min-w-0 flex-1 flex-col">
+                            <span className="truncate font-medium">{item.title}</span>
+                            {item.subtitle ? (
+                              <span className="truncate text-xs text-muted-foreground">
+                                {item.subtitle}
+                              </span>
+                            ) : null}
+                          </span>
+                          {active ? (
+                            <HugeiconsIcon
+                              icon={ArrowTurnBackwardIcon}
+                              className="size-4 shrink-0 text-primary"
+                              aria-hidden="true"
+                            />
+                          ) : null}
                         </button>
                       </li>
                     );
@@ -176,9 +259,27 @@ export function CommandPalette() {
             ))
           )}
         </div>
-        <div className="border-t px-3 py-2 text-xs text-muted-foreground">
-          ↑↓ navigate · Enter open · Esc close
-          {searching ? " · Searching…" : ""}
+        <div className="flex flex-wrap items-center gap-4 border-t px-3 py-2.5 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <kbd className="rounded border bg-muted px-1 py-0.5 font-sans">
+              <HugeiconsIcon icon={ArrowUp01Icon} className="inline size-3" />
+            </kbd>
+            <kbd className="rounded border bg-muted px-1 py-0.5 font-sans">
+              <HugeiconsIcon icon={ArrowDown01Icon} className="inline size-3" />
+            </kbd>
+            to navigate
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="rounded border bg-muted px-1.5 py-0.5 font-sans">↵</kbd>
+            to select
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="inline-flex items-center rounded border bg-muted px-1 py-0.5 font-sans">
+              <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
+            </kbd>
+            to close
+          </span>
+          {searching ? <span className="ml-auto">Searching…</span> : null}
         </div>
       </DialogContent>
     </Dialog>

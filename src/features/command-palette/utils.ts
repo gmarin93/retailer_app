@@ -34,6 +34,7 @@ export function pageItems(pages: Page[], query: string): PaletteItem[] {
       id: `page-${page.id}`,
       group: "Pages" as const,
       title: page.title,
+      subtitle: "Go to page",
       href: `/${page.id}`,
     }));
 }
@@ -46,6 +47,7 @@ export function actionItems(query: string): PaletteItem[] {
       id: "action-logout",
       group: "Actions",
       title: "Log out",
+      subtitle: "End your session",
       action: "logout",
     },
   ];

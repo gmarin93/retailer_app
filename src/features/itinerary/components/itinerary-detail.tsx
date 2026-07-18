@@ -3,8 +3,11 @@
 import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
+  Camera01Icon,
   CheckmarkCircle02Icon,
+  Clock01Icon,
   File01Icon,
+  HelpCircleIcon,
   Location01Icon,
   Mail01Icon,
 } from "@hugeicons/core-free-icons";
@@ -12,6 +15,11 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useSession } from "@/features/auth/hooks";
+import { JobDocumentsChips } from "@/features/jobs/components/job-documents-chips";
+import { JobPhotosList } from "@/features/jobs/components/job-photos-list";
+import { JobQuestionsList } from "@/features/jobs/components/job-questions-list";
+import { VisitAccordion } from "@/features/jobs/components/visit-accordion";
+import { VisitSummaryCard } from "@/features/jobs/components/visit-summary-card";
 import { useSaveGeolocation, useSubmitReport } from "@/features/jobs/hooks";
 import {
   formatJobStatus,
@@ -19,11 +27,7 @@ import {
   formatUtcDate,
   type DetailedJob,
 } from "@/features/jobs/schemas";
-import { JobPhotosList } from "@/features/jobs/components/job-photos-list";
-import { JobQuestionsList } from "@/features/jobs/components/job-questions-list";
-import { JobStatusChip } from "@/features/jobs/components/job-status-chip";
 import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import {
   accountManagerEmails,
   buildJobMailto,
@@ -35,30 +39,9 @@ import {
 } from "../utils";
 import { ReportDialog } from "./report-dialog";
 
-function MetaTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium">{value}</p>
-    </div>
-  );
-}
-
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
-  );
-}
-
 /**
- * Itinerary visit detail — header, meta tiles, documents/questions/photos
- * sections, and the report submission flow. Ported from the
- * `itinerary-detail*` component family and `ItineraryDetailBloc`.
+ * Itinerary visit detail — Angular `itinerary-detail-*` layout:
+ * Back + title → visit summary card → accordion (Documents / Questions / Photos / Submit).
  */
 export function ItineraryDetail({
   job,
@@ -75,9 +58,13 @@ export function ItineraryDetail({
   const geolocation = useSaveGeolocation();
   const submitReport = useSubmitReport(job.id);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  /** Reset accordion step when the selected visit changes without an effect. */
+  const [stepState, setStepState] = useState({ jobId: job.id, step: 1 });
+  const activeStep = stepState.jobId === job.id ? stepState.step : 1;
+  function setActiveStep(step: number) {
+    setStepState({ jobId: job.id, step });
+  }
 
-  /** Pending-submission warning appears 5s after opening a submitted visit.
-   * Keyed by job id so switching visits resets it without effect-time setState. */
   const [pendingWarningJobId, setPendingWarningJobId] = useState<number | null>(null);
   const showPendingWarning = pendingWarningJobId === job.id;
   useEffect(() => {
@@ -87,7 +74,6 @@ export function ItineraryDetail({
     return () => clearTimeout(timer);
   }, [job.id, job.status]);
 
-  /** One-time geolocation feature toast for open visits (localStorage-gated). */
   const geoToastShownFor = useRef<number | null>(null);
   useEffect(() => {
     if (job.status !== "open" || geoToastShownFor.current === job.id) return;
@@ -100,24 +86,102 @@ export function ItineraryDetail({
     }
   }, [job.id, job.status]);
 
-  if (!session) return null;
-  const role = session.user.role;
-  const userId = session.user.id;
-
-  const mayWork = canWorkJob(job, role, userId);
-  const maySubmit = canSubmitReport(job, role, userId);
+  const role = session?.user.role;
+  const userId = session?.user.id;
+  const mayWork = role != null && userId != null ? canWorkJob(job, role, userId) : false;
+  const maySubmit =
+    role != null && userId != null ? canSubmitReport(job, role, userId) : false;
   const requirements = unfilledJobRequirements(job);
-  const report = myReport(job, userId);
+  const report = userId != null ? myReport(job, userId) : null;
   const managerEmails = accountManagerEmails(job);
 
   const onEmail = () => {
     window.open(buildJobMailto(job, managerEmails), "_self");
   };
 
+  const steps = [
+    {
+      id: "documents",
+      title: "Documents",
+      icon: File01Icon,
+      content: <JobDocumentsChips job={job} />,
+    },
+    {
+      id: "questions",
+      title: "Questions",
+      icon: HelpCircleIcon,
+      content: <JobQuestionsList job={job} />,
+    },
+    {
+      id: "photos",
+      title: "Photos",
+      icon: Camera01Icon,
+      content: <JobPhotosList job={job} showCardBadge />,
+    },
+    {
+      id: "submit",
+      title: "Submit",
+      icon: Clock01Icon,
+      content: maySubmit ? (
+        <div className="space-y-4 text-sm">
+          <p className="flex items-center gap-2">
+            <HugeiconsIcon
+              icon={CheckmarkCircle02Icon}
+              aria-hidden="true"
+              className="size-5 text-green-600"
+            />
+            This visit may be submitted.
+          </p>
+          {showPendingWarning && job.status === "pending" && (
+            <p className="flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-amber-800 dark:bg-amber-500/15 dark:text-amber-200">
+              This visit has already been submitted
+              {report
+                ? ` (${formatMinutes(report.actual_minutes)} on ${formatUtcDate(report.completed_on)})`
+                : ""}
+              . Submitting again will allow you to change the time and date of the previous
+              submission.
+            </p>
+          )}
+          <Button
+            onClick={() => setReportDialogOpen(true)}
+            disabled={submitReport.isPending}
+          >
+            <HugeiconsIcon icon={Clock01Icon} aria-hidden="true" className="size-4" />
+            {report ? "Resubmit report" : "Submit"}
+          </Button>
+        </div>
+      ) : !mayWork ? (
+        <div className="space-y-2 text-sm">
+          <p className="font-medium">This visit cannot be submitted.</p>
+          <p className="text-muted-foreground">
+            This visit is not currently open, and may have already been reviewed (
+            {formatJobStatus(job.status)}).
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2 text-sm">
+          <p className="font-medium">This visit cannot be submitted.</p>
+          <p className="text-muted-foreground">
+            This visit does not have all of the required photos and questions filled out:
+          </p>
+          <ul className="list-inside list-disc text-muted-foreground">
+            {requirements.map((requirement) => (
+              <li key={`${requirement.id}-${requirement.description}`}>
+                {requirement.description}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ),
+    },
+  ];
+
+  if (!session) return null;
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={onClose}>
+    <div className="mx-auto max-w-[1040px] space-y-3 sm:space-y-5">
+      <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm">
+        <Button variant="outline" size="sm" onClick={onClose}>
           <HugeiconsIcon icon={ArrowLeft01Icon} aria-hidden="true" className="size-4" />
           Back
         </Button>
@@ -142,22 +206,12 @@ export function ItineraryDetail({
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs text-muted-foreground uppercase">Visit #{job.id}</p>
-            <CardTitle className="text-lg">{job.customer?.title}</CardTitle>
-          </div>
-          <JobStatusChip job={job} />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onEmail}
-              disabled={managerEmails.length === 0}
-            >
+      <VisitSummaryCard
+        job={job}
+        storeFormat="itinerary"
+        actions={
+          <>
+            <Button size="sm" onClick={onEmail} disabled={managerEmails.length === 0}>
               <HugeiconsIcon icon={Mail01Icon} aria-hidden="true" className="size-4" />
               Send email
             </Button>
@@ -172,103 +226,15 @@ export function ItineraryDetail({
                 {geolocation.isPending ? "Saving…" : "Save geolocation"}
               </Button>
             )}
-          </div>
+          </>
+        }
+      />
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <MetaTile
-              label="Store"
-              value={`${job.retailer?.title ?? ""} #${job.store?.store_no ?? ""}: ${job.store?.title ?? ""}${job.store?.address1 ? ` (${job.store.address1})` : ""}`}
-            />
-            <MetaTile label="Program" value={job.program?.title ?? "—"} />
-            <MetaTile label="Cycle" value={job.cycle?.title ?? "—"} />
-            <MetaTile label="Starts on" value={formatUtcDate(job.visit?.opens_at)} />
-            <MetaTile label="Due on" value={formatUtcDate(job.visit?.closes_at)} />
-            <MetaTile label="Planned time" value={formatMinutes(job.visit?.planned_minutes)} />
-          </div>
-        </CardContent>
-      </Card>
-
-      <SectionCard title="Documents">
-        {job.documents.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No documents for this visit.</p>
-        ) : (
-          <ul className="divide-y">
-            {job.documents.map((doc) => (
-              <li key={doc.id} className="flex items-center gap-3 py-2 text-sm">
-                <HugeiconsIcon
-                  icon={File01Icon}
-                  aria-hidden="true"
-                  className="size-4 shrink-0 text-muted-foreground"
-                />
-                {doc.location ? (
-                  <a
-                    href={doc.location}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="truncate underline-offset-2 hover:underline"
-                  >
-                    {doc.title}
-                  </a>
-                ) : (
-                  <span className="truncate">{doc.title}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </SectionCard>
-
-      <SectionCard title="Questions">
-        <JobQuestionsList job={job} />
-      </SectionCard>
-
-      <SectionCard title="Photos">
-        <JobPhotosList job={job} />
-      </SectionCard>
-
-      <SectionCard title="Submit">
-        {maySubmit ? (
-          <div className="space-y-3 text-sm">
-            <p className="flex items-center gap-2">
-              <HugeiconsIcon
-                icon={CheckmarkCircle02Icon}
-                aria-hidden="true"
-                className="size-4 text-green-600"
-              />
-              This visit may be submitted.
-            </p>
-            {showPendingWarning && job.status === "pending" && (
-              <p className="rounded-md bg-amber-50 p-3 text-amber-800">
-                This visit has already been submitted
-                {report
-                  ? ` (${formatMinutes(report.actual_minutes)} on ${formatUtcDate(report.completed_on)})`
-                  : ""}
-                . Submitting again will replace the existing report.
-              </p>
-            )}
-            <Button onClick={() => setReportDialogOpen(true)} disabled={submitReport.isPending}>
-              {report ? "Resubmit report" : "Submit report"}
-            </Button>
-          </div>
-        ) : !mayWork ? (
-          <p className="text-sm text-muted-foreground">
-            You cannot work this visit ({formatJobStatus(job.status)}).
-          </p>
-        ) : (
-          <div className="space-y-2 text-sm">
-            <p className="text-muted-foreground">
-              The following requirements must be filled before submitting:
-            </p>
-            <ul className="list-inside list-disc">
-              {requirements.map((requirement) => (
-                <li key={`${requirement.id}-${requirement.description}`}>
-                  {requirement.description}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </SectionCard>
+      <VisitAccordion
+        steps={steps}
+        activeStep={activeStep}
+        onStepChange={setActiveStep}
+      />
 
       <ReportDialog
         job={job}

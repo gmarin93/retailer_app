@@ -34,10 +34,8 @@ export const planningKeys = {
     [...planningKeys.all, "readiness", { cycleId, programId }] as const,
   planReadiness: (planId: number | null) =>
     [...planningKeys.all, "plan-readiness", planId] as const,
-  detailed: (planId: number | null) =>
-    [...planningKeys.all, "detailed", planId] as const,
-  stores: (retailerId: number | null) =>
-    [...planningKeys.all, "stores", retailerId] as const,
+  detailed: (planId: number | null) => [...planningKeys.all, "detailed", planId] as const,
+  stores: (retailerId: number | null) => [...planningKeys.all, "stores", retailerId] as const,
   storeDiff: (planId: number | null, cycleId: number | null) =>
     [...planningKeys.all, "store-diff", { planId, cycleId }] as const,
   chart: (scope: PlansChartRequest) => [...planningKeys.all, "chart", scope] as const,
@@ -122,9 +120,7 @@ export function useCreatePlan(cycleId: number | null, programId: number | null) 
       invalidatePlanQueries(queryClient, cycleId, programId, plan.id);
     },
     onError: (error) =>
-      toast.error(
-        error instanceof ApiError ? error.message : "Failed to create new plan.",
-      ),
+      toast.error(error instanceof ApiError ? error.message : "Failed to create new plan."),
   });
 }
 
@@ -229,7 +225,6 @@ export function usePreviewAllocate() {
     onError: () => toast.error("Failed to build dispatch preview."),
   });
 }
-
 export function useCopyPlan(cycleId: number | null, programId: number | null) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -282,8 +277,6 @@ export function useSetCustomerCycleBudget() {
       void queryClient.invalidateQueries({ queryKey: [...planningKeys.all, "chart"] });
     },
     onError: (error) =>
-      toast.error(
-        error instanceof ApiError ? error.message : "Failed to update budget.",
-      ),
+      toast.error(error instanceof ApiError ? error.message : "Failed to update budget."),
   });
 }

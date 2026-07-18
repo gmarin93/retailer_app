@@ -48,13 +48,23 @@ export interface EntityField {
   relationSerialize?: "url" | "id";
 }
 
+/** Which entities support avatar/logo upload in the create/edit dialog. */
+export type EntityAvatarKind = "user" | "customer" | "retailer" | "store";
+
 /** Optional manager extras beyond v0 CRUD (logos, store priorities). */
 export interface EntityExtras {
   /** Header secondary action: bulk logo upload for this entity kind. */
   bulkLogo?: BulkLogoEntityKind;
   /** Stores only: row action opens assign-reps dialog. */
   storePriorities?: boolean;
-  /** Stores only: avatar picker in the edit dialog. */
+  /**
+   * Avatar/logo hero + “Choose Avatar” in create/edit dialogs.
+   * `store` uploads via v2; others via v0 multipart `avatar`.
+   */
+  avatarUpload?: EntityAvatarKind;
+  /**
+   * @deprecated Prefer `avatarUpload: "store"`. Kept so existing configs keep working.
+   */
   storeAvatar?: boolean;
   /** Row Active column is an inline checkbox that PATCHes `active`. */
   inlineActive?: boolean;
@@ -64,6 +74,10 @@ export interface EntityConfig {
   /** Singular + plural display names. */
   singular: string;
   plural: string;
+  /** Header subtitle under the title (Angular generic-manager). */
+  subtitle?: string;
+  /** Tooltip on the header info icon. */
+  infoTooltip?: string;
   /** v0 API route, e.g. "cycles". */
   route: string;
   columns: EntityColumn[];

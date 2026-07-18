@@ -4,6 +4,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { LoadingState } from "@/shared/components/loading-state";
+import { chartTheme } from "@/shared/lib/theme";
 import { usePlansChart } from "../hooks";
 import type { PlansChartRequest } from "../schemas";
 
@@ -77,7 +78,7 @@ export function PlanningCharts({
                         />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip contentStyle={chartTheme.tooltip} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -121,7 +122,7 @@ export function PlanningCharts({
                         />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip contentStyle={chartTheme.tooltip} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>

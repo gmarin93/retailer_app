@@ -22,24 +22,27 @@ import {
   type ListableJob,
 } from "../schemas";
 
-/** Angular jobs-list status pill tokens. */
+/** Angular jobs-list status pill tokens (light + dark). */
 const STATUS_CLASSES: Record<string, string> = {
-  planned: "bg-[#f3f4f6] text-[#374151]",
-  open: "bg-[#fff2e0] text-[#c2410c]",
-  pending: "bg-[#e0eaff] text-[#1d4ed8]",
-  completed: "bg-[#d1fae5] text-[#065f46]",
-  cancelled: "bg-[#fee2e2] text-[#b91c1c]",
-  invoiced: "bg-[#ede9fe] text-[#5b21b6]",
+  planned:
+    "bg-[#f3f4f6] text-[#374151] dark:bg-white/10 dark:text-slate-200",
+  open: "bg-[#fff2e0] text-[#c2410c] dark:bg-orange-500/15 dark:text-orange-300",
+  pending: "bg-[#e0eaff] text-[#1d4ed8] dark:bg-blue-500/15 dark:text-blue-300",
+  completed:
+    "bg-[#d1fae5] text-[#065f46] dark:bg-emerald-500/15 dark:text-emerald-300",
+  cancelled: "bg-[#fee2e2] text-[#b91c1c] dark:bg-red-500/15 dark:text-red-300",
+  invoiced:
+    "bg-[#ede9fe] text-[#5b21b6] dark:bg-violet-500/15 dark:text-violet-300",
 };
 
 /** Menu dot colors — the pill text colors (Angular `_status-menu-dot`). */
 const STATUS_DOT_CLASSES: Record<string, string> = {
-  planned: "bg-[#374151]",
-  open: "bg-[#c2410c]",
-  pending: "bg-[#1d4ed8]",
-  completed: "bg-[#065f46]",
-  cancelled: "bg-[#b91c1c]",
-  invoiced: "bg-[#5b21b6]",
+  planned: "bg-[#374151] dark:bg-slate-300",
+  open: "bg-[#c2410c] dark:bg-orange-300",
+  pending: "bg-[#1d4ed8] dark:bg-blue-300",
+  completed: "bg-[#065f46] dark:bg-emerald-300",
+  cancelled: "bg-[#b91c1c] dark:bg-red-300",
+  invoiced: "bg-[#5b21b6] dark:bg-violet-300",
 };
 
 const STATUS_CHOICES = Object.entries(JOB_STATUS_LABELS) as [JobStatus, string][];
@@ -61,7 +64,7 @@ export function JobStatusChip({
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap",
         overdue
-          ? "bg-[#fee2e2] text-[#b91c1c]"
+          ? "bg-[#fee2e2] text-[#b91c1c] dark:bg-red-500/15 dark:text-red-300"
           : (STATUS_CLASSES[job.status] ?? STATUS_CLASSES.planned),
         className,
       )}

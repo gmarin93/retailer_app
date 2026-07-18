@@ -22,6 +22,9 @@ export const sessionUserSchema = z.looseObject({
   first_name: z.string().nullish(),
   last_name: z.string().nullish(),
   email: z.string().nullish(),
+  avatar: z.string().nullish(),
+  phone_number: z.string().nullish(),
+  rep_no: z.union([z.string(), z.number()]).nullish(),
 });
 
 export type SessionUser = z.infer<typeof sessionUserSchema>;

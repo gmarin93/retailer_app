@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import {
   Select,
@@ -23,33 +23,57 @@ import { useActivePrograms } from "@/shared/services/entities/programs";
 import {
   Alert02Icon,
   Briefcase01Icon,
+  Building02Icon,
+  Calendar03Icon,
+  Camera01Icon,
   Cash01Icon,
   CheckmarkCircle02Icon,
+  ClipboardIcon,
+  File01Icon,
+  HelpCircleIcon,
   Layers01Icon,
   MagicWand01Icon,
   MultiplicationSignCircleIcon,
+  PlusSignIcon,
+  Store01Icon,
   Tick02Icon,
+  UserGroupIcon,
 } from "@hugeicons/core-free-icons";
+import type { IconSvgElement } from "@hugeicons/react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { fetchPlan, type ListablePlan } from "../api";
 import { useCreatePlan, usePlans, usePlansReadiness, planningKeys } from "../hooks";
 import type { PlansChartRequest } from "../schemas";
+import type { PlanEditorTab } from "../types";
+import { formatPlanStatus } from "../types";
 import { getNextGroup } from "../utils";
 import { PlanEditor } from "./plan-editor";
 import { PlansDownloadDialog } from "./plans-download-dialog";
 import { SetBudgetDialog } from "./set-budget-dialog";
+
+const PLAN_TABS: { id: PlanEditorTab; label: string; icon: IconSvgElement }[] = [
+  { id: "details", label: "Plans", icon: ClipboardIcon },
+  { id: "stores", label: "Stores", icon: Store01Icon },
+  { id: "visits", label: "Visits", icon: Calendar03Icon },
+  { id: "photos", label: "Photos", icon: Camera01Icon },
+  { id: "questions", label: "Questions", icon: HelpCircleIcon },
+  { id: "documents", label: "Documents", icon: File01Icon },
+];
+
+/** Quick-nav icons shown inside each group card (all tabs except details). */
+const CARD_QUICK_TABS: { id: PlanEditorTab; icon: IconSvgElement }[] = [
+  { id: "stores", icon: Building02Icon },
+  { id: "visits", icon: Calendar03Icon },
+  { id: "photos", icon: Camera01Icon },
+  { id: "questions", icon: HelpCircleIcon },
+  { id: "documents", icon: File01Icon },
+];
 
 /** Deferred: recharts stays out of the planning route's initial bundle. */
 const PlanningCharts = dynamic(
   () => import("./planning-charts").then((mod) => mod.PlanningCharts),
   { ssr: false, loading: () => <LoadingState label="Loading charts…" className="min-h-48" /> },
 );
-
-const READINESS_CLASSES: Record<string, string> = {
-  ready: "bg-green-50 text-green-700",
-  warning: "bg-amber-50 text-amber-700",
-  blocked: "bg-red-50 text-red-700",
-};
 
 /** Angular `formatPlanCost` — whole-dollar USD. */
 function formatPlanCost(cost: number | null | undefined): string {
@@ -79,19 +103,6 @@ function StepIndex({ index, done, locked }: { index: number; done: boolean; lock
   );
 }
 
-function ReadinessBadge({ level }: { level: string }) {
-  return (
-    <span
-      className={cn(
-        "rounded-full px-2 py-0.5 text-xs font-medium capitalize",
-        READINESS_CLASSES[level] ?? READINESS_CLASSES.warning,
-      )}
-    >
-      {level}
-    </span>
-  );
-}
-
 /**
  * Planning Studio browse + plan editor: cycle → customer → program → group,
  * with create/edit/lifecycle for the selected plan.
@@ -108,6 +119,7 @@ export function PlanningView() {
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [programId, setProgramId] = useState<number | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<PlanEditorTab>("details");
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [budgetOpen, setBudgetOpen] = useState(false);
 
@@ -404,77 +416,158 @@ export function PlanningView() {
       ) : plansQuery.isLoading ? (
         <LoadingState label="Loading plans…" className="min-h-60" />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-              <CardTitle className="text-base">Groups</CardTitle>
-              <Button
+        <div className="space-y-4">
+          {/* Groups horizontal card strip — parity with Angular planner. */}
+          <div>
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+              <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                {plans.length}
+              </span>
+              Groups
+            </h2>
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {plans.map((plan) => {
+                const summary = readiness.get(plan.id);
+                const level = summary?.readiness ?? "warning";
+                const isSelected = selectedPlan?.id === plan.id;
+                const DOT_COLORS: Record<string, string> = {
+                  ready: "bg-success",
+                  warning: "bg-warning",
+                  blocked: "bg-destructive",
+                };
+                return (
+                  <div
+                    key={plan.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      setSelectedPlanId(plan.id);
+                      setActiveTab("details");
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelectedPlanId(plan.id);
+                        setActiveTab("details");
+                      }
+                    }}
+                    aria-pressed={isSelected}
+                    className={cn(
+                      "flex min-w-[180px] max-w-[220px] shrink-0 cursor-pointer flex-col gap-2 rounded-xl border bg-card p-3 text-left transition-all duration-150 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                      isSelected
+                        ? "border-primary shadow-[0_0_0_1px_var(--primary)] shadow-primary/20"
+                        : "border-border",
+                    )}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <HugeiconsIcon icon={UserGroupIcon} aria-hidden className="size-4.5" />
+                      </span>
+                      <span className="min-w-0 flex-1 pt-0.5">
+                        <span className="flex items-center gap-1.5">
+                          <span className="block truncate text-sm font-semibold leading-tight">
+                            {plan.group || "—"}
+                          </span>
+                          <span
+                            className={cn(
+                              "size-2 shrink-0 rounded-full",
+                              DOT_COLORS[level] ?? "bg-muted-foreground",
+                            )}
+                            title={level}
+                          />
+                        </span>
+                        <span className="block text-xs capitalize text-muted-foreground">
+                          {formatPlanStatus(plan.status)}
+                          {plan.is_survey ? " · survey" : ""}
+                        </span>
+                        <span className="mt-0.5 block text-xs font-medium text-muted-foreground">
+                          {plan.expected_jobs > 0
+                            ? `${plan.expected_jobs.toLocaleString()} jobs`
+                            : "0 jobs"}
+                          {plan.total_cost > 0
+                            ? ` · ${formatPlanCost(plan.total_cost)}`
+                            : ""}
+                        </span>
+                      </span>
+                    </div>
+                    {/* Quick-nav tab icons — must not nest <button> inside the card control */}
+                    <div className="flex items-center gap-1 border-t border-border/60 pt-2">
+                      {CARD_QUICK_TABS.map((qt) => (
+                        <button
+                          key={qt.id}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPlanId(plan.id);
+                            setActiveTab(qt.id);
+                          }}
+                          className={cn(
+                            "flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/50",
+                            isSelected && activeTab === qt.id && "bg-primary/10 text-primary",
+                          )}
+                          aria-label={qt.id}
+                        >
+                          <HugeiconsIcon icon={qt.icon} aria-hidden className="size-3.5" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* New group card */}
+              <button
                 type="button"
-                size="sm"
-                variant="outline"
                 disabled={createMutation.isPending}
                 onClick={handleNewGroup}
+                className="flex min-w-[160px] shrink-0 items-center justify-center gap-2 rounded-xl border border-dashed border-primary/40 bg-transparent p-3 text-sm font-medium text-primary/70 transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50"
               >
+                <HugeiconsIcon icon={PlusSignIcon} aria-hidden className="size-4" />
                 {createMutation.isPending ? "Creating…" : "New group"}
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {plans.length === 0 ? (
-                <p className="px-1 py-4 text-sm text-muted-foreground">
-                  No plans yet. Create a group to start planning.
-                </p>
-              ) : (
-                <ul className="divide-y">
-                  {plans.map((plan) => {
-                    const summary = readiness.get(plan.id);
-                    const isSelected = selectedPlan?.id === plan.id;
-                    return (
-                      <li key={plan.id}>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedPlanId(plan.id)}
-                          aria-pressed={isSelected}
-                          className={cn(
-                            "flex w-full items-center justify-between gap-2 px-2 py-2 text-left text-sm hover:bg-accent/50",
-                            isSelected && "bg-accent",
-                          )}
-                        >
-                          <span className="min-w-0">
-                            <span className="block truncate font-medium">
-                              Group {plan.group || "—"}
-                            </span>
-                            <span className="text-xs text-muted-foreground capitalize">
-                              {plan.status}
-                              {plan.is_survey ? " · survey" : ""}
-                            </span>
-                          </span>
-                          <ReadinessBadge level={summary?.readiness ?? "warning"} />
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+              </button>
+            </div>
+          </div>
 
           {selectedPlan ? (
-            <PlanEditor
-              plan={selectedPlan}
-              cycleId={effectiveCycleId}
-              programId={effectiveProgramId}
-              customerId={effectiveCustomerId}
-              retailerId={retailerId}
-              cycles={cycles}
-              customers={customers.data ?? []}
-              onDeleted={() => setSelectedPlanId(null)}
-              onCopied={(planId) => setSelectedPlanId(planId)}
-            />
+            <>
+              {/* Tab bar — Angular-style full-width pill tabs with icons */}
+              <div className="flex flex-wrap gap-1 rounded-xl border bg-card p-1.5">
+                {PLAN_TABS.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setActiveTab(item.id)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                      activeTab === item.id
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    )}
+                  >
+                    <HugeiconsIcon icon={item.icon} aria-hidden className="size-4" />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+              <PlanEditor
+                plan={selectedPlan}
+                cycleId={effectiveCycleId}
+                programId={effectiveProgramId}
+                customerId={effectiveCustomerId}
+                retailerId={retailerId}
+                cycles={cycles}
+                customers={customers.data ?? []}
+                tab={activeTab}
+                onDeleted={() => setSelectedPlanId(null)}
+                onCopied={(planId) => setSelectedPlanId(planId)}
+              />
+            </>
           ) : (
             <EmptyState
               icon={MagicWand01Icon}
               title="No plan selected"
-              description="Create or select a group to open the editor."
+              description="Select a group above to open the editor."
             />
           )}
         </div>

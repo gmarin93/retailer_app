@@ -23,17 +23,18 @@ export function ErrorState({
     <div
       role="alert"
       className={cn(
-        "flex flex-col items-center justify-center gap-2 rounded-xl border border-[#ffe9e6] bg-[#fff7f6] p-12 text-center shadow-[var(--shadow-card)]",
+        "flex flex-col items-center justify-center gap-2 rounded-xl border border-[var(--error-border)] bg-[var(--error-surface)] p-12 text-center shadow-[var(--shadow-card)]",
         className,
       )}
     >
-      <HugeiconsIcon
-        icon={Alert02Icon}
+      <span
         aria-hidden="true"
-        className="mb-2 size-10 text-destructive"
-      />
+        className="mb-3 flex size-14 items-center justify-center rounded-full bg-destructive/10 text-destructive"
+      >
+        <HugeiconsIcon icon={Alert02Icon} className="size-7" />
+      </span>
       <h2 className="text-lg font-semibold">Something went wrong</h2>
-      <p className="max-w-md text-[13px] text-muted-foreground">{message}</p>
+      <p className="max-w-sm text-[13px] leading-relaxed text-muted-foreground">{message}</p>
       {onRetry && (
         <Button variant="outline" className="mt-4" onClick={onRetry}>
           Try again

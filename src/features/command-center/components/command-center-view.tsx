@@ -1,7 +1,15 @@
 "use client";
 
-import { RefreshIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  CheckmarkCircle02Icon,
+  Clock01Icon,
+  HourglassIcon,
+  RefreshIcon,
+  UserRemove01Icon,
+  Briefcase01Icon,
+  FileEditIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
@@ -21,23 +29,37 @@ import { assigneeLabel, closesLabel, healthFromCounts, storeLabel } from "../uti
 
 const ALL = "__all__";
 
-const KPI_META = [
-  { key: "completion", label: "Completion", variant: "green", format: (n: number) => `${n}%` },
-  { key: "total", label: "Total visits", variant: "blue" },
-  { key: "open", label: "In progress", variant: "teal" },
-  { key: "pending", label: "Needs review", variant: "amber" },
-  { key: "overdue", label: "Overdue", variant: "red" },
-  { key: "unassigned", label: "Unassigned", variant: "violet" },
-] as const;
+type KpiTone = "green" | "blue" | "teal" | "amber" | "red" | "violet";
 
-const VARIANT_CLASSES: Record<string, string> = {
-  green: "border-green-200 bg-green-50 text-green-800",
-  blue: "border-blue-200 bg-blue-50 text-blue-800",
-  teal: "border-teal-200 bg-teal-50 text-teal-800",
-  amber: "border-amber-200 bg-amber-50 text-amber-800",
-  red: "border-red-200 bg-red-50 text-red-800",
-  violet: "border-violet-200 bg-violet-50 text-violet-800",
+const KPI_TONES: Record<KpiTone, string> = {
+  green: "bg-green-600/12 text-green-600 dark:text-green-400",
+  blue: "bg-primary/12 text-primary",
+  teal: "bg-teal-500/12 text-teal-600 dark:text-teal-300",
+  amber: "bg-amber-500/14 text-amber-600 dark:text-amber-300",
+  red: "bg-[#e85a3a]/12 text-[#e85a3a]",
+  violet: "bg-violet-500/12 text-violet-600 dark:text-violet-300",
 };
+
+const KPI_META: Array<{
+  key: "completion" | "total" | "open" | "pending" | "overdue" | "unassigned";
+  label: string;
+  tone: KpiTone;
+  icon: IconSvgElement;
+  format?: (n: number) => string;
+}> = [
+  {
+    key: "completion",
+    label: "Completion",
+    tone: "green",
+    icon: CheckmarkCircle02Icon,
+    format: (n) => `${n}%`,
+  },
+  { key: "total", label: "Total visits", tone: "blue", icon: Briefcase01Icon },
+  { key: "open", label: "In progress", tone: "teal", icon: HourglassIcon },
+  { key: "pending", label: "Needs review", tone: "amber", icon: FileEditIcon },
+  { key: "overdue", label: "Overdue", tone: "red", icon: Clock01Icon },
+  { key: "unassigned", label: "Unassigned", tone: "violet", icon: UserRemove01Icon },
+];
 
 const HEALTH_CLASSES: Record<string, string> = {
   good: "bg-green-100 text-green-800",
@@ -184,19 +206,33 @@ export function CommandCenterView() {
           return (
             <Card
               key={meta.key}
-              className={cn("border", VARIANT_CLASSES[meta.variant])}
+              className="shadow-[0_2px_8px_rgba(17,24,39,0.06)]"
             >
-              <CardContent className="pt-4">
-                <p className="text-xs font-medium opacity-80">{meta.label}</p>
-                {cc.isLoading || raw == null ? (
-                  <Skeleton className="mt-2 h-7 w-16" />
-                ) : (
-                  <p className="mt-1 text-2xl font-semibold tabular-nums">
-                    {"format" in meta && meta.format
-                      ? meta.format(raw)
-                      : raw.toLocaleString()}
-                  </p>
-                )}
+              <CardContent className="flex items-center gap-3 px-3.5 py-3.5">
+                <span
+                  className={cn(
+                    "inline-flex size-[42px] shrink-0 items-center justify-center rounded-xl",
+                    KPI_TONES[meta.tone],
+                  )}
+                >
+                  <HugeiconsIcon
+                    icon={meta.icon}
+                    aria-hidden="true"
+                    className="size-[22px]"
+                  />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+                    {meta.label}
+                  </span>
+                  {cc.isLoading || raw == null ? (
+                    <Skeleton className="mt-1 h-7 w-14" />
+                  ) : (
+                    <span className="block text-xl font-bold tracking-tight tabular-nums text-foreground">
+                      {meta.format ? meta.format(raw) : raw.toLocaleString()}
+                    </span>
+                  )}
+                </span>
               </CardContent>
             </Card>
           );

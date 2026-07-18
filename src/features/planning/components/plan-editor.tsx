@@ -1,6 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import {
+  Alert02Icon,
+  AlertCircleIcon,
+  CheckmarkCircle02Icon,
+  UnavailableIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { useState } from "react"; // used for local UI state (dialogs, search, templates)
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
@@ -54,6 +61,7 @@ import type {
   AllocatePreview,
   CopyPlanOptions,
   PlanEditorFormValues,
+  PlanReadinessDetail,
 } from "../schemas";
 import {
   PLAN_RATE_TYPE_OPTIONS,
@@ -89,26 +97,186 @@ import {
 } from "../utils";
 import { AllocatePreviewDialog } from "./allocate-preview-dialog";
 import { PlannerCopyDialog } from "./planner-copy-dialog";
-import {
-  PlannerAddMenu,
-  RowReorderButtons,
-} from "./planner-palette-panel";
+import { PlannerDndBoard } from "./planner-dnd-board";
 import { PlannerPaletteTemplateDialog } from "./planner-palette-template-dialog";
-
-const TABS: { id: PlanEditorTab; label: string }[] = [
-  { id: "details", label: "Plans" },
-  { id: "stores", label: "Stores" },
-  { id: "visits", label: "Visits" },
-  { id: "photos", label: "Photos" },
-  { id: "questions", label: "Questions" },
-  { id: "documents", label: "Documents" },
-];
 
 const READINESS_CLASSES: Record<string, string> = {
   ready: "bg-green-50 text-green-700",
   warning: "bg-amber-50 text-amber-700",
   blocked: "bg-red-50 text-red-700",
 };
+
+const wholeUsd = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
+
+const PANEL_LEVELS = {
+  ready: {
+    icon: CheckmarkCircle02Icon,
+    container: "border-success/40",
+    heading: "text-success",
+    badge: "bg-success/15 text-success",
+  },
+  warning: {
+    icon: Alert02Icon,
+    container: "border-warning/50",
+    heading: "text-warning",
+    badge: "bg-warning/15 text-warning",
+  },
+  blocked: {
+    icon: UnavailableIcon,
+    container: "border-destructive/40",
+    heading: "text-destructive",
+    badge: "bg-destructive/15 text-destructive",
+  },
+} as const;
+
+/**
+ * Dispatch readiness panel — parity with the Angular planner's readiness card:
+ * KPI row (expected jobs / rep coverage / plan cost / budget left), warning
+ * rows, unassigned-store list, and the per-rep workload preview. All data
+ * comes from `GET /v2/plans/{id}/readiness/`.
+ */
+function DispatchReadinessPanel({ readiness }: { readiness: PlanReadinessDetail }) {
+  const level =
+    PANEL_LEVELS[readiness.readiness as keyof typeof PANEL_LEVELS] ?? PANEL_LEVELS.warning;
+  const budget = readiness.budget;
+
+  const stats = [
+    { label: "Expected jobs", value: readiness.expected_jobs.toLocaleString() },
+    {
+      label: "Rep coverage",
+      value:
+        readiness.coverage_pct != null
+          ? `${readiness.coverage_pct}%`
+          : readiness.is_survey
+            ? "All reps"
+            : "—",
+    },
+    {
+      label: "Plan cost",
+      value: readiness.cost != null ? wholeUsd.format(readiness.cost) : "—",
+    },
+    {
+      label: "Budget left",
+      value: budget ? wholeUsd.format(budget.customer_remaining) : "—",
+      danger: budget?.over_budget ?? false,
+    },
+  ];
+
+  return (
+    <section
+      aria-label="Dispatch readiness"
+      className={cn("space-y-4 rounded-xl border p-4", level.container)}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <h3 className={cn("flex items-center gap-2 text-sm font-semibold", level.heading)}>
+          <HugeiconsIcon icon={level.icon} aria-hidden="true" className="size-4.5" />
+          Dispatch readiness
+        </h3>
+        <span
+          className={cn(
+            "rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize",
+            level.badge,
+          )}
+        >
+          {readiness.readiness}
+        </span>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <div key={stat.label} className="rounded-lg border bg-card px-3 py-2.5">
+            <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+              {stat.label}
+            </p>
+            <p
+              className={cn(
+                "mt-0.5 text-lg font-semibold tabular-nums",
+                stat.danger && "text-destructive",
+              )}
+            >
+              {stat.value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {readiness.warnings.length === 0 ? (
+        <p className="flex items-center gap-2 text-sm font-medium text-success">
+          <HugeiconsIcon icon={CheckmarkCircle02Icon} aria-hidden="true" className="size-4" />
+          No warnings — this plan is ready to dispatch.
+        </p>
+      ) : (
+        <ul className="space-y-1.5">
+          {readiness.warnings.map((warning, index) => (
+            <li
+              key={`${warning.code}-${index}`}
+              className={cn(
+                "flex items-start gap-2 rounded-md px-3 py-2 text-sm",
+                warning.severity === "high"
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-warning/10 text-warning",
+              )}
+            >
+              <HugeiconsIcon
+                icon={warning.severity === "high" ? UnavailableIcon : AlertCircleIcon}
+                aria-hidden="true"
+                className="mt-0.5 size-4 shrink-0"
+              />
+              {warning.message || warning.code}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {readiness.unassigned_stores.length > 0 && (
+        <div>
+          <p className="mb-1.5 text-xs font-semibold text-foreground">
+            Stores without a rep ({readiness.unassigned_stores.length})
+          </p>
+          <ul className="space-y-0.5 text-xs text-muted-foreground">
+            {readiness.unassigned_stores.map((store, index) => (
+              <li key={store.id ?? index}>
+                {store.retailer ? `${store.retailer} ` : ""}
+                {store.store_no != null ? `#${store.store_no}` : ""}
+                {store.title ? ` — ${store.title}` : ""}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {readiness.rep_workload_preview.length > 0 && (
+        <div>
+          <p className="mb-1.5 text-xs font-semibold text-foreground">Rep workload preview</p>
+          <ul className="divide-y divide-border/60 rounded-md border bg-card text-sm">
+            {readiness.rep_workload_preview.map((rep) => (
+              <li
+                key={rep.user_id}
+                className="flex items-center justify-between gap-2 px-3 py-1.5"
+              >
+                <span className="min-w-0 truncate">
+                  {rep.rep_no != null && (
+                    <span className="mr-1.5 text-xs text-muted-foreground tabular-nums">
+                      #{rep.rep_no}
+                    </span>
+                  )}
+                  {rep.name}
+                </span>
+                <span className="shrink-0 text-xs font-medium text-primary tabular-nums">
+                  {rep.jobs.toLocaleString()} job{rep.jobs === 1 ? "" : "s"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+}
 
 interface PlanEditorProps {
   plan: ListablePlan;
@@ -118,6 +286,8 @@ interface PlanEditorProps {
   retailerId: number | null;
   cycles: ListableCycle[];
   customers: Array<{ id: number; title: string }>;
+  /** Tab is controlled externally by PlanningView so group card icons work. */
+  tab: PlanEditorTab;
   onDeleted: () => void;
   onCopied: (planId: number) => void;
 }
@@ -130,12 +300,12 @@ export function PlanEditor({
   retailerId,
   cycles,
   customers,
+  tab,
   onDeleted,
   onCopied,
 }: PlanEditorProps) {
   const session = useSession();
   const role = session!.user.role;
-  const [tab, setTab] = useState<PlanEditorTab>("details");
   const [storeSearch, setStoreSearch] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmAllocate, setConfirmAllocate] = useState(false);
@@ -147,12 +317,10 @@ export function PlanEditor({
     ...DEFAULT_PHOTO_PALETTE_TEMPLATES,
     ...loadCustomPhotoPaletteTemplates(),
   ]);
-  const [questionTemplates, setQuestionTemplates] = useState<QuestionPaletteTemplate[]>(
-    () => [
-      ...DEFAULT_QUESTION_PALETTE_TEMPLATES,
-      ...loadCustomQuestionPaletteTemplates(),
-    ],
-  );
+  const [questionTemplates, setQuestionTemplates] = useState<QuestionPaletteTemplate[]>(() => [
+    ...DEFAULT_QUESTION_PALETTE_TEMPLATES,
+    ...loadCustomQuestionPaletteTemplates(),
+  ]);
   const [photoTemplateDialogOpen, setPhotoTemplateDialogOpen] = useState(false);
   const [questionTemplateDialogOpen, setQuestionTemplateDialogOpen] = useState(false);
 
@@ -220,11 +388,7 @@ export function PlanEditor({
   );
 
   function requestAllocate() {
-    if (
-      readiness &&
-      readiness.readiness === "warning" &&
-      readiness.warnings.length > 0
-    ) {
+    if (readiness && readiness.readiness === "warning" && readiness.warnings.length > 0) {
       setConfirmAllocateWarnings(true);
       return;
     }
@@ -284,7 +448,7 @@ export function PlanEditor({
       <CardHeader className="flex flex-wrap items-center justify-between gap-2">
         <div className="space-y-1">
           <CardTitle className="text-base">Group {plan.group || "—"}</CardTitle>
-          <p className="text-xs capitalize text-muted-foreground">
+          <p className="text-xs text-muted-foreground capitalize">
             {status}
             {plan.is_survey ? " · survey" : ""}
           </p>
@@ -292,8 +456,7 @@ export function PlanEditor({
         <span
           className={cn(
             "rounded-full px-2 py-0.5 text-xs font-medium capitalize",
-            READINESS_CLASSES[readiness?.readiness ?? "warning"] ??
-              READINESS_CLASSES.warning,
+            READINESS_CLASSES[readiness?.readiness ?? "warning"] ?? READINESS_CLASSES.warning,
           )}
         >
           {readiness?.readiness ?? "warning"}
@@ -315,22 +478,6 @@ export function PlanEditor({
               <p className="text-xs text-muted-foreground">{metric.label}</p>
               <p className="text-sm font-medium">{metric.value}</p>
             </div>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap gap-1 border-b pb-2">
-          {TABS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setTab(item.id)}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-xs font-medium hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/30",
-                tab === item.id && "bg-accent",
-              )}
-            >
-              {item.label}
-            </button>
           ))}
         </div>
 
@@ -573,125 +720,90 @@ export function PlanEditor({
           )}
 
           {tab === "photos" && (
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm text-muted-foreground">
-                  {photosArray.fields.length} photo request
-                  {photosArray.fields.length === 1 ? "" : "s"}
-                </p>
-                <PlannerAddMenu
-                  label="Add photo"
-                  items={photoTemplates}
-                  disabled={!editPhotos || busy}
-                  onAdd={(id) => {
-                    const template = photoTemplates.find((item) => item.id === id);
-                    if (template) photosArray.append(photoRowFromTemplate(template));
-                  }}
-                  onAddCustom={() => setPhotoTemplateDialogOpen(true)}
-                  onRemoveCustom={(id) => {
-                    const next = photoTemplates.filter((item) => item.id !== id);
-                    setPhotoTemplates(next);
-                    saveCustomPhotoPaletteTemplates(next);
-                  }}
-                />
-              </div>
-              {photosArray.fields.length === 0 ? (
-                <p className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-                  Use Add photo to choose a type for this plan.
-                </p>
-              ) : null}
-              {photosArray.fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="flex flex-wrap items-end gap-3 rounded-lg border p-3"
-                >
+            <PlannerDndBoard
+              libraryAriaLabel="Photo library"
+              dropPanelAriaLabel="Plan photos"
+              itemNoun="photo"
+              templates={photoTemplates}
+              rowIds={photosArray.fields.map((field) => field.id)}
+              disabled={!editPhotos || busy}
+              onAddCustom={() => setPhotoTemplateDialogOpen(true)}
+              onRemoveCustom={(id) => {
+                const next = photoTemplates.filter((item) => item.id !== id);
+                setPhotoTemplates(next);
+                saveCustomPhotoPaletteTemplates(next);
+              }}
+              onInsertFromTemplate={(template, index) => {
+                photosArray.insert(index, photoRowFromTemplate(template));
+              }}
+              onReorder={(from, to) => photosArray.move(from, to)}
+              onRemoveRow={(index) => photosArray.remove(index)}
+              rowTitle={(index) => `Description for photo ${index + 1}`}
+              renderRow={(index) => (
+                <div className="flex flex-wrap items-center gap-4">
                   <div className="min-w-48 flex-1 space-y-1">
-                    <Label>Description</Label>
+                    <Label className="sr-only">Description</Label>
                     <Input
+                      placeholder="Description"
                       disabled={!editPhotos || busy}
                       {...form.register(`photos.${index}.description`)}
                     />
                   </div>
-                  <label className="flex items-center gap-2 pb-2 text-sm">
+                  <label className="flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"
                       className="size-4 accent-primary"
                       disabled={!editPhotos || busy}
                       {...form.register(`photos.${index}.required`)}
                     />
-                    Required
+                    Is Required?
                   </label>
-                  <RowReorderButtons
-                    index={index}
-                    total={photosArray.fields.length}
-                    disabled={!editPhotos || busy}
-                    onMove={(from, to) => photosArray.move(from, to)}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={!editPhotos || busy}
-                    onClick={() => photosArray.remove(index)}
-                  >
-                    Remove
-                  </Button>
                 </div>
-              ))}
-            </div>
+              )}
+            />
           )}
 
           {tab === "questions" && (
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm text-muted-foreground">
-                  {questionsArray.fields.length} question request
-                  {questionsArray.fields.length === 1 ? "" : "s"}
-                </p>
-                <PlannerAddMenu
-                  label="Add question"
-                  items={questionTemplates}
-                  disabled={!editQuestions || busy}
-                  onAdd={(id) => {
-                    const template = questionTemplates.find((item) => item.id === id);
-                    if (template) questionsArray.append(questionRowFromTemplate(template));
-                  }}
-                  onAddCustom={() => setQuestionTemplateDialogOpen(true)}
-                  onRemoveCustom={(id) => {
-                    const next = questionTemplates.filter((item) => item.id !== id);
-                    setQuestionTemplates(next);
-                    saveCustomQuestionPaletteTemplates(next);
-                  }}
-                />
-              </div>
-              {questionsArray.fields.length === 0 ? (
-                <p className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-                  Use Add question to choose a type for this plan.
-                </p>
-              ) : null}
-              {questionsArray.fields.map((field, index) => (
+            <PlannerDndBoard
+              libraryAriaLabel="Question library"
+              dropPanelAriaLabel="Plan questions"
+              itemNoun="question"
+              templates={questionTemplates}
+              rowIds={questionsArray.fields.map((field) => field.id)}
+              disabled={!editQuestions || busy}
+              onAddCustom={() => setQuestionTemplateDialogOpen(true)}
+              onRemoveCustom={(id) => {
+                const next = questionTemplates.filter((item) => item.id !== id);
+                setQuestionTemplates(next);
+                saveCustomQuestionPaletteTemplates(next);
+              }}
+              onInsertFromTemplate={(template, index) => {
+                questionsArray.insert(index, questionRowFromTemplate(template));
+              }}
+              onReorder={(from, to) => questionsArray.move(from, to)}
+              onRemoveRow={(index) => questionsArray.remove(index)}
+              rowTitle={(index) => `Question ${index + 1}`}
+              renderRow={(index) => (
                 <Controller
-                  key={field.id}
                   control={form.control}
                   name={`questions.${index}.kind`}
                   render={({ field: kindField }) => {
                     const kind = kindField.value;
                     const needsData =
-                      kind === "checklist" ||
-                      kind === "multiple_choice" ||
-                      kind === "number";
+                      kind === "checklist" || kind === "multiple_choice" || kind === "number";
                     return (
-                      <div className="space-y-2 rounded-lg border p-3">
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          <div className="space-y-1">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-end gap-4">
+                          <div className="min-w-48 flex-1 space-y-1">
                             <Label>Description</Label>
                             <Input
+                              placeholder="Description"
                               disabled={!editQuestions || busy}
                               {...form.register(`questions.${index}.description`)}
                             />
                           </div>
-                          <div className="space-y-1">
-                            <Label>Kind</Label>
+                          <div className="w-full space-y-1 sm:w-[220px]">
+                            <Label>Question type</Label>
                             <Select
                               value={kindField.value}
                               onValueChange={(value) =>
@@ -711,87 +823,65 @@ export function PlanEditor({
                               </SelectContent>
                             </Select>
                           </div>
-                        </div>
-                        {needsData && (
-                          <div className="space-y-1">
-                            <Label>
-                              {kind === "number"
-                                ? "Min,max"
-                                : kind === "checklist"
-                                  ? "Items (comma-separated)"
-                                  : "Choices (comma-separated)"}
-                            </Label>
-                            <Input
-                              disabled={!editQuestions || busy}
-                              {...form.register(`questions.${index}.data`)}
-                            />
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between gap-2">
-                          <label className="flex items-center gap-2 text-sm">
+                          <label className="flex items-center gap-2 pb-2 text-sm">
                             <input
                               type="checkbox"
                               className="size-4 accent-primary"
                               disabled={!editQuestions || busy}
                               {...form.register(`questions.${index}.required`)}
                             />
-                            Required
+                            Is Required?
                           </label>
-                          <div className="flex items-center gap-1">
-                            <RowReorderButtons
-                              index={index}
-                              total={questionsArray.fields.length}
-                              disabled={!editQuestions || busy}
-                              onMove={(from, to) => questionsArray.move(from, to)}
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              disabled={!editQuestions || busy}
-                              onClick={() => questionsArray.remove(index)}
-                            >
-                              Remove
-                            </Button>
-                          </div>
                         </div>
+                        {needsData ? (
+                          <div className="space-y-1">
+                            <Label className="sr-only">
+                              {kind === "number"
+                                ? "Min,max"
+                                : kind === "checklist"
+                                  ? "Items"
+                                  : "Choices"}
+                            </Label>
+                            <Input
+                              placeholder={
+                                kind === "number"
+                                  ? "Minimum, maximum"
+                                  : kind === "checklist"
+                                    ? "Comma-separated tasks"
+                                    : "Comma-separated choices"
+                              }
+                              disabled={!editQuestions || busy}
+                              {...form.register(`questions.${index}.data`)}
+                            />
+                          </div>
+                        ) : null}
                       </div>
                     );
                   }}
                 />
-              ))}
-            </div>
+              )}
+            />
           )}
 
           {tab === "documents" && (
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm text-muted-foreground">
-                  {documentsArray.fields.length} document
-                  {documentsArray.fields.length === 1 ? "" : "s"}
-                </p>
-                <PlannerAddMenu
-                  label="Add document"
-                  items={DEFAULT_DOCUMENT_PALETTE_TEMPLATES}
-                  disabled={!editDocuments || busy}
-                  onAdd={(id) => {
-                    const template = DEFAULT_DOCUMENT_PALETTE_TEMPLATES.find(
-                      (item) => item.id === id,
-                    );
-                    if (template) documentsArray.append(documentRowFromTemplate(template));
-                  }}
-                />
-              </div>
-              {documentsArray.fields.length === 0 ? (
-                <p className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-                  Use Add document to choose Media, PDF, or Excel.
-                </p>
-              ) : null}
-              {documentsArray.fields.map((field, index) => {
+            <PlannerDndBoard
+              libraryAriaLabel="Document library"
+              dropPanelAriaLabel="Plan documents"
+              itemNoun="document"
+              templates={DEFAULT_DOCUMENT_PALETTE_TEMPLATES}
+              rowIds={documentsArray.fields.map((field) => field.id)}
+              disabled={!editDocuments || busy}
+              onInsertFromTemplate={(template, index) => {
+                documentsArray.insert(index, documentRowFromTemplate(template));
+              }}
+              onReorder={(from, to) => documentsArray.move(from, to)}
+              onRemoveRow={(index) => documentsArray.remove(index)}
+              rowTitle={(index) => `Document ${index + 1}`}
+              renderRow={(index) => {
                 const location = form.getValues(`documents.${index}.location`);
                 const kind = form.getValues(`documents.${index}.kind`) ?? "media";
                 return (
-                  <div key={field.id} className="space-y-2 rounded-lg border p-3">
+                  <div className="space-y-2">
                     <div className="grid gap-2 sm:grid-cols-2">
                       <div className="space-y-1">
                         <Label>Title</Label>
@@ -835,26 +925,11 @@ export function PlanEditor({
                           </a>
                         </Button>
                       ) : null}
-                      <RowReorderButtons
-                        index={index}
-                        total={documentsArray.fields.length}
-                        disabled={!editDocuments || busy}
-                        onMove={(from, to) => documentsArray.move(from, to)}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={!editDocuments || busy}
-                        onClick={() => documentsArray.remove(index)}
-                      >
-                        Remove
-                      </Button>
                     </div>
                   </div>
                 );
-              })}
-            </div>
+              }}
+            />
           )}
 
           <div className="flex flex-wrap gap-2 border-t pt-4">
@@ -865,9 +940,8 @@ export function PlanEditor({
                 !canSavePlan(status, role) ||
                 !form.formState.isDirty ||
                 (!form.formState.dirtyFields.documents &&
-                  Object.keys(
-                    buildPatchablePlan(form.getValues(), form.formState.dirtyFields),
-                  ).length === 0)
+                  Object.keys(buildPatchablePlan(form.getValues(), form.formState.dirtyFields))
+                    .length === 0)
               }
             >
               {patchMutation.isPending ? "Saving…" : "Save"}
@@ -911,12 +985,7 @@ export function PlanEditor({
               </Button>
             )}
             {allowPreview && (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={busy}
-                onClick={handlePreview}
-              >
+              <Button type="button" variant="outline" disabled={busy} onClick={handlePreview}>
                 {previewMutation.isPending ? "Previewing…" : "Preview"}
               </Button>
             )}
@@ -943,45 +1012,11 @@ export function PlanEditor({
           </div>
         </form>
 
-        <div>
-          <h3 className="mb-2 text-sm font-medium">Readiness</h3>
-          {readinessQuery.isLoading ? (
-            <LoadingState label="Checking readiness…" className="p-4" />
-          ) : (readiness?.warnings.length ?? 0) === 0 ? (
-            <p className="text-sm text-green-700">No warnings — this plan looks ready.</p>
-          ) : (
-            <ul className="space-y-1">
-              {readiness!.warnings.map((warning, index) => (
-                <li
-                  key={`${warning.code}-${index}`}
-                  className={cn(
-                    "rounded-md px-3 py-2 text-sm",
-                    warning.severity === "high"
-                      ? "bg-red-50 text-red-800"
-                      : "bg-amber-50 text-amber-800",
-                  )}
-                >
-                  {warning.message || warning.code}
-                </li>
-              ))}
-            </ul>
-          )}
-          {(readiness?.unassigned_stores.length ?? 0) > 0 && (
-            <div className="mt-3">
-              <p className="mb-1 text-xs font-medium text-muted-foreground">
-                Stores without default assignee
-              </p>
-              <ul className="text-xs text-red-700">
-                {readiness!.unassigned_stores.map((store, index) => (
-                  <li key={store.id ?? index}>
-                    {store.store_no != null ? `${store.store_no} · ` : ""}
-                    {store.title || "Store"}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+        {readinessQuery.isLoading ? (
+          <LoadingState label="Checking readiness…" className="p-4" />
+        ) : readiness ? (
+          <DispatchReadinessPanel readiness={readiness} />
+        ) : null}
       </CardContent>
 
       <ConfirmDialog

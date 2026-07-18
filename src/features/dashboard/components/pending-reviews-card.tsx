@@ -52,7 +52,7 @@ export function PendingReviewsCard({
             className="flex w-full items-center justify-between gap-4 py-2 text-left text-sm hover:bg-accent/50"
           >
             <span className="truncate">{entry.customer_title}</span>
-            <span className="shrink-0 rounded-full bg-pink-50 px-2 py-0.5 text-xs font-medium text-pink-700">
+            <span className="shrink-0 rounded-full border border-pink-600 bg-pink-600 px-2 py-0.5 text-xs font-medium text-white dark:border-pink-200/50 dark:bg-pink-100 dark:text-black">
               {entry.visits_count} visit{entry.visits_count === 1 ? "" : "s"}
             </span>
           </button>

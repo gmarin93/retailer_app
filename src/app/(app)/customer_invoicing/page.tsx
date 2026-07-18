@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { LoadingState } from "@/shared/components/loading-state";
 import { CustomerInvoiceStudioView } from "@/features/invoicing/components/customer-invoice-studio-view";
 
-export const metadata = { title: "Customer Invoice Studio" };
+export const metadata = { title: "Customer Invoicing" };
 
 export default function CustomerInvoicingPage() {
   return (

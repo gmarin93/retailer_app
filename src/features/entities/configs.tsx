@@ -9,16 +9,38 @@ import type { EntityConfig, EntityRecord } from "./types";
 
 const activeCell = (record: EntityRecord) => (record.active === true ? "Yes" : "No");
 
+/** Angular generic-manager date cells: `MMM DD, YYYY`. */
+function formatDateCell(value: unknown): string {
+  if (value == null || value === "") return "";
+  const date = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  });
+}
+
 export const cyclesConfig: EntityConfig = {
   singular: "cycle",
   plural: "Cycles",
+  subtitle: "Organize visit cycles and keep scheduling periods up to date.",
+  infoTooltip: "Cycle management",
   route: "cycles",
   sortField: "code",
   columns: [
     { key: "code", label: "Code" },
     { key: "title", label: "Title" },
-    { key: "starts_on", label: "Starts" },
-    { key: "ends_on", label: "Ends" },
+    {
+      key: "starts_on",
+      label: "Starts",
+      getValue: (r) => formatDateCell(r.starts_on),
+    },
+    {
+      key: "ends_on",
+      label: "Ends",
+      getValue: (r) => formatDateCell(r.ends_on),
+    },
   ],
   searchFields: ["code", "title"],
   fields: [
@@ -33,6 +55,8 @@ export const cyclesConfig: EntityConfig = {
 export const customersConfig: EntityConfig = {
   singular: "customer",
   plural: "Customers",
+  subtitle: "Manage customer accounts, logos, and profile information.",
+  infoTooltip: "Customer management",
   route: "customers",
   columns: [
     { key: "code", label: "Code" },
@@ -56,12 +80,14 @@ export const customersConfig: EntityConfig = {
     { name: "postal_code", label: "Postal code", type: "text" },
     { name: "active", label: "Active", type: "checkbox" },
   ],
-  extras: { bulkLogo: "customer" },
+  extras: { bulkLogo: "customer", avatarUpload: "customer" },
 };
 
 export const retailersConfig: EntityConfig = {
   singular: "retailer",
   plural: "Retailers",
+  subtitle: "Manage retailer profiles, branding, and account details.",
+  infoTooltip: "Retailer management",
   route: "retailers",
   columns: [
     { key: "code", label: "Code" },
@@ -74,12 +100,14 @@ export const retailersConfig: EntityConfig = {
     { name: "title", label: "Title", type: "text", required: true },
     { name: "active", label: "Active", type: "checkbox" },
   ],
-  extras: { bulkLogo: "retailer" },
+  extras: { bulkLogo: "retailer", avatarUpload: "retailer" },
 };
 
 export const programsConfig: EntityConfig = {
   singular: "program",
   plural: "Programs",
+  subtitle: "Create and maintain programs linked to your field operations.",
+  infoTooltip: "Program management",
   route: "programs",
   columns: [
     { key: "code", label: "Code" },
@@ -127,9 +155,12 @@ export const programsConfig: EntityConfig = {
 export const usersConfig: EntityConfig = {
   singular: "user",
   plural: "Users",
+  subtitle: "Browse, search, and manage team accounts and roles.",
+  infoTooltip: "User management",
   route: "users",
   sortField: "first_name",
   columns: [
+    { key: "avatar", label: "" },
     {
       key: "name",
       label: "Name",
@@ -167,13 +198,16 @@ export const usersConfig: EntityConfig = {
     { name: "rep_no", label: "Rep #", type: "number" },
     { name: "rate", label: "Rate", type: "number" },
     { name: "max_hours", label: "Max hours", type: "number" },
+    { name: "is_employee", label: "Employee", type: "checkbox" },
     { name: "is_active", label: "Active", type: "checkbox" },
   ],
+  extras: { avatarUpload: "user" },
 };
 
 export const storesConfig: EntityConfig = {
   singular: "store",
   plural: "Stores",
+  infoTooltip: "Stores management",
   route: "stores",
   sortField: "store_no",
   columns: [
@@ -216,6 +250,7 @@ export const storesConfig: EntityConfig = {
   extras: {
     bulkLogo: "store",
     storePriorities: true,
+    avatarUpload: "store",
     storeAvatar: true,
     inlineActive: true,
   },

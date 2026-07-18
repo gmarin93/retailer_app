@@ -69,6 +69,8 @@ export interface RequestOptions {
   searchParams?: Record<string, QueryValue>;
   /** Abort signal — TanStack Query provides one per query for cancellation. */
   signal?: AbortSignal;
+  /** Per-request timeout in ms (overrides the client default). */
+  timeout?: number;
 }
 
 function cleanSearchParams(
@@ -89,6 +91,7 @@ export const api = {
         .get(url, {
           searchParams: cleanSearchParams(options.searchParams),
           signal: options.signal,
+          timeout: options.timeout,
         })
         .json<T>();
     } catch (error) {

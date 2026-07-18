@@ -30,6 +30,7 @@ import {
 } from "@/shared/components/ui/select";
 import { ErrorState } from "@/shared/components/error-state";
 import { LoadingState } from "@/shared/components/loading-state";
+import { chartTheme } from "@/shared/lib/theme";
 import { cn } from "@/shared/lib/utils";
 import type { ListableCustomer } from "@/shared/services/entities/customers";
 import type { CycleScope, DashboardFilters, useFillRateChart } from "../hooks";
@@ -260,17 +261,24 @@ export function FillRateChartCard({
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chart.data} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke={chartTheme.gridStroke}
+                />
                 <XAxis
                   dataKey="name"
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 12, fill: chartTheme.tickFill }}
                   interval={0}
                   angle={-30}
                   textAnchor="end"
                   height={70}
                 />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip formatter={(value, name) => [`${Math.round(Number(value))}h`, name]} />
+                <YAxis tick={{ fontSize: 12, fill: chartTheme.tickFill }} />
+                <Tooltip
+                  contentStyle={chartTheme.tooltip}
+                  formatter={(value, name) => [`${Math.round(Number(value))}h`, name]}
+                />
                 {CHART_SERIES_KEYS.filter((key) => !hiddenSeries.has(key)).map((key) => (
                   <Bar
                     key={key}

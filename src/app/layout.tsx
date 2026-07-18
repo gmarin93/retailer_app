@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Roboto } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
+import { THEME_INIT_SCRIPT_SRC } from "@/shared/lib/theme";
 import { cn } from "@/shared/lib/utils";
 import { AppProviders } from "@/shared/providers/app-providers";
 
@@ -32,9 +34,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={cn("h-full font-sans antialiased", geistMono.variable, roboto.variable)}
     >
       <body className="flex min-h-full flex-col">
+        <Script src={THEME_INIT_SCRIPT_SRC} strategy="beforeInteractive" />
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

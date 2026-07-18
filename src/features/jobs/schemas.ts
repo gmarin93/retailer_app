@@ -57,9 +57,13 @@ export const listableJobSchema = z.looseObject({
     .array(
       z.looseObject({
         id: z.number(),
+        username: z.string().nullish(),
         email: z.string().nullish(),
         first_name: z.string().nullish(),
         last_name: z.string().nullish(),
+        avatar: z.string().nullish(),
+        role: z.string().nullish(),
+        phone_number: z.string().nullish(),
         rep_no: z.union([z.string(), z.number()]).nullish(),
       }),
     )
@@ -74,9 +78,14 @@ export type ListableJob = z.infer<typeof listableJobSchema>;
 
 const listableUserSchema = z.looseObject({
   id: z.number(),
+  username: z.string().nullish(),
   first_name: z.string().nullish(),
   last_name: z.string().nullish(),
   email: z.string().nullish(),
+  avatar: z.string().nullish(),
+  role: z.string().nullish(),
+  phone_number: z.string().nullish(),
+  rep_no: z.union([z.string(), z.number()]).nullish(),
 });
 
 export const photoResponseSchema = z.looseObject({
@@ -235,4 +244,16 @@ export function formatMinutes(minutes: number | null | undefined): string {
 /** UTC date part of an ISO timestamp for visit-date display (amFromUtc parity). */
 export function formatUtcDate(value: string | null | undefined): string {
   return value ? new Date(value).toISOString().slice(0, 10) : "—";
+}
+
+/** Short visit-date label used in the jobs table (`MMM DD`, Angular parity). */
+export function formatUtcDateShort(value: string | null | undefined): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "2-digit",
+    timeZone: "UTC",
+  });
 }

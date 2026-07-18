@@ -44,7 +44,15 @@ function formatCurrency(value: number | string | null | undefined): string {
 }
 
 function downloadCsv(rows: ListableInvoice[]) {
-  const header = ["Invoice ID", "Customer", "Program", "Visits", "Billing Date", "Total", "Voided"];
+  const header = [
+    "Invoice ID",
+    "Customer",
+    "Program",
+    "Visits",
+    "Billing Date",
+    "Total",
+    "Voided",
+  ];
   const lines = rows.map((inv) =>
     [
       inv.id,
@@ -99,7 +107,7 @@ export function CustomerInvoiceListView() {
   const hasInvoices = invoices.length > 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeader
           title="Invoices"

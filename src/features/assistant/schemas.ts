@@ -37,16 +37,58 @@ export const klikinConfirmResponseSchema = z.looseObject({
   error: z.string().optional(),
 });
 
+export const klikinReportPreviewSchema = z.looseObject({
+  report_id: z.string(),
+  report_type: z.string().catch(""),
+  title: z.string().catch(""),
+  sections: z
+    .array(
+      z.looseObject({
+        heading: z.string().catch(""),
+        body: z.string().catch(""),
+      }),
+    )
+    .catch([]),
+  markdown: z.string().catch(""),
+});
+
+export const klikinReportFileSchema = z.looseObject({
+  title: z.string().catch(""),
+  filename: z.string(),
+  download_url: z.string(),
+});
+
+export const klikinReportEmailResultSchema = z.looseObject({
+  ok: z.boolean(),
+  to: z.array(z.string()).catch([]),
+  subject: z.string().catch(""),
+  attached: z.string().optional(),
+});
+
 export type KlikinAction = z.infer<typeof klikinActionSchema>;
 export type KlikinAttachment = z.infer<typeof klikinAttachmentSchema>;
 export type KlikinChatResponse = z.infer<typeof klikinChatResponseSchema>;
 export type KlikinConfirmResponse = z.infer<typeof klikinConfirmResponseSchema>;
+export type KlikinReportPreview = z.infer<typeof klikinReportPreviewSchema>;
+export type KlikinReportFile = z.infer<typeof klikinReportFileSchema>;
+export type KlikinReportEmailResult = z.infer<typeof klikinReportEmailResultSchema>;
+export type KlikinReportFormat = "pdf" | "xlsx" | "md" | "txt";
+
+export type ConfirmationStatus = "idle" | "running" | "done" | "error" | "cancelled";
+
+export interface PendingConfirmation {
+  id: string;
+  action: KlikinAction;
+  status: ConfirmationStatus;
+  resultText?: string;
+}
 
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
   attachments?: KlikinAttachment[];
-  confirmations?: KlikinAction[];
-  suggested?: string[];
+  confirmations?: PendingConfirmation[];
+  /** True while the assistant reply is in flight (typing dots). */
+  pending?: boolean;
 }
