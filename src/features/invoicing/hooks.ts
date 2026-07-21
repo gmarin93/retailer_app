@@ -1,17 +1,49 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ApiError } from "@/shared/services/api";
-import { deleteUserInvoice, fetchCustomerInvoices, voidCustomerInvoice } from "./api";
+import {
+  deleteUserInvoice,
+  fetchCustomerInvoicesPage,
+  type FetchCustomerInvoicesPageOptions,
+  voidCustomerInvoice,
+} from "./api";
+
+const STATS_PAGE_SIZE = 200;
 
 export const invoicingKeys = {
   customerInvoices: () => ["invoicing", "customerInvoices"] as const,
+  customerInvoicesPage: (options: FetchCustomerInvoicesPageOptions) =>
+    [...invoicingKeys.customerInvoices(), "page", options] as const,
+  customerInvoicesAll: () => [...invoicingKeys.customerInvoices(), "all"] as const,
 };
 
-/** Loads the full customer invoice list (500 per page ceiling, like Angular). */
-export function useCustomerInvoices() {
+/** Paginated list — previous page stays visible while the next page loads. */
+export function useCustomerInvoicesPage(options: FetchCustomerInvoicesPageOptions) {
   return useQuery({
-    queryKey: invoicingKeys.customerInvoices(),
-    queryFn: ({ signal }) => fetchCustomerInvoices(signal),
+    queryKey: invoicingKeys.customerInvoicesPage(options),
+    queryFn: ({ signal }) => fetchCustomerInvoicesPage(options, signal),
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * Background exhaustive load for stats + CSV. Pages accumulate so UI can show
+ * running totals instead of waiting for every invoice before painting numbers.
+ */
+export function useCustomerInvoicesAll() {
+  return useInfiniteQuery({
+    queryKey: invoicingKeys.customerInvoicesAll(),
+    queryFn: ({ pageParam, signal }) =>
+      fetchCustomerInvoicesPage({ page: pageParam, pageSize: STATS_PAGE_SIZE }, signal),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, pages) => (lastPage.next ? pages.length + 1 : undefined),
     staleTime: 60_000,
   });
 }
@@ -26,7 +58,9 @@ export function useVoidCustomerInvoice() {
     },
     onError: (error) =>
       toast.error(
-        error instanceof ApiError ? `Failed to void invoice: ${error.message}` : "Failed to void invoice.",
+        error instanceof ApiError
+          ? `Failed to void invoice: ${error.message}`
+          : "Failed to void invoice.",
       ),
   });
 }

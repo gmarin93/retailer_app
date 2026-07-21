@@ -20,6 +20,7 @@ export function ConfirmDialog({
   confirmLabel = "Yes",
   cancelLabel = "Cancel",
   destructive = false,
+  isPending,
   onConfirm,
 }: {
   open: boolean;
@@ -29,24 +30,41 @@ export function ConfirmDialog({
   confirmLabel?: string;
   cancelLabel?: string;
   destructive?: boolean;
+  /**
+   * When provided (including `false`), the dialog stays open after confirm so
+   * the parent can close on mutation success. Omit to keep the legacy
+   * close-immediately behavior.
+   */
+  isPending?: boolean;
   onConfirm: () => void;
 }) {
+  const managesPending = isPending !== undefined;
+  const pending = isPending ?? false;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next && pending) return;
+        onOpenChange(next);
+      }}
+    >
       <DialogContent className="sm:max-w-[360px]">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{question}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button variant="ghost" disabled={pending} onClick={() => onOpenChange(false)}>
             {cancelLabel}
           </Button>
           <Button
             variant={destructive ? "destructive" : "default"}
+            disabled={pending}
+            aria-busy={pending}
             onClick={() => {
-              onOpenChange(false);
               onConfirm();
+              if (!managesPending) onOpenChange(false);
             }}
           >
             {confirmLabel}

@@ -369,7 +369,7 @@ export function CustomerInvoiceStudioView() {
                     <div className="w-52 space-y-1.5">
                       <Label>Customer</Label>
                       <Select
-                        value={filterCustomer || undefined}
+                        value={filterCustomer || ""}
                         onValueChange={(value) =>
                           setFilterCustomer(value === "__any__" ? "" : value)
                         }
@@ -390,7 +390,7 @@ export function CustomerInvoiceStudioView() {
                     <div className="w-52 space-y-1.5">
                       <Label>Cycle</Label>
                       <Select
-                        value={filterCycle || undefined}
+                        value={filterCycle || ""}
                         onValueChange={(value) =>
                           setFilterCycle(value === "__any__" ? "" : value)
                         }
@@ -483,7 +483,7 @@ export function CustomerInvoiceStudioView() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label>Confirm customer</Label>
-                    <Select value={confirmCustomerId || undefined} onValueChange={setConfirmCustomerId}>
+                    <Select value={confirmCustomerId || ""} onValueChange={setConfirmCustomerId}>
                       <SelectTrigger className="bg-card">
                         <SelectValue placeholder="Confirm customer" />
                       </SelectTrigger>

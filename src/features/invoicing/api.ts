@@ -1,7 +1,7 @@
 import { env } from "@/shared/lib/env";
 import { api, httpClient } from "@/shared/services/api";
 import { resultsPageSchema, fetchAllPages } from "@/shared/services/api/pagination";
-import type { CustomChargeLine, ListableUserInvoice, ListableInvoice } from "./schemas";
+import type { CustomChargeLine, ListableUserInvoice } from "./schemas";
 import {
   invoiceableJobPageSchema,
   invoicesVoidResponseSchema,
@@ -80,16 +80,28 @@ export async function downloadLegacySummary(userInvoiceIds: number[]): Promise<v
 
 // ── Customer invoices ──────────────────────────────────────────────────────
 
-export async function fetchCustomerInvoices(signal?: AbortSignal): Promise<ListableInvoice[]> {
+export interface FetchCustomerInvoicesPageOptions {
+  /** 1-based page index (DRF `_page`). */
+  page: number;
+  pageSize: number;
+  search?: string;
+}
+
+/** One page of customer invoices — used for the browsable list. */
+export async function fetchCustomerInvoicesPage(
+  options: FetchCustomerInvoicesPageOptions,
+  signal?: AbortSignal,
+) {
   const pageSchema = resultsPageSchema(listableInvoiceSchema);
-  return fetchAllPages((page) =>
-    api
-      .get<unknown>(`${v2}/invoices/`, {
-        searchParams: { _page: String(page), _page_size: "200" },
-        signal,
-      })
-      .then((data) => pageSchema.parse(data)),
-  );
+  const searchParams: Record<string, string> = {
+    _page: String(options.page),
+    _page_size: String(options.pageSize),
+  };
+  const search = options.search?.trim();
+  if (search) searchParams._search = search;
+
+  const data = await api.get<unknown>(`${v2}/invoices/`, { searchParams, signal });
+  return pageSchema.parse(data);
 }
 
 export async function voidCustomerInvoice(invoiceId: number) {

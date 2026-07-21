@@ -42,7 +42,7 @@ function SoftButton({
       aria-label={ariaLabel}
       disabled={disabled}
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-lg bg-[#e8f0fe] px-3 py-1.5 text-[13px] font-medium text-[#4a76fd] transition-colors hover:bg-[#dce8fc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4a76fd]/35 disabled:cursor-default disabled:opacity-70 disabled:hover:bg-[#e8f0fe]"
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#e8f0fe] px-3 py-1.5 text-[13px] font-medium whitespace-nowrap text-[#4a76fd] transition-colors hover:bg-[#dce8fc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4a76fd]/35 disabled:cursor-default disabled:opacity-70 disabled:hover:bg-[#e8f0fe] dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/25"
     >
       {children}
     </button>
@@ -51,7 +51,7 @@ function SoftButton({
 
 /**
  * Question requests with responses and add/edit/delete answer actions —
- * visual twin of Angular `job-questions-list` (3-column card grid).
+ * visual twin of Angular `job-questions-list`.
  */
 export function JobQuestionsList({
   job,
@@ -61,7 +61,7 @@ export function JobQuestionsList({
   job: DetailedJob;
   /** Review page: blue Answer badge in each card header. */
   showCardBadge?: boolean;
-  /** Force a single column (narrow panels). */
+  /** Force a single column (narrow panels / review detail). */
   singleColumn?: boolean;
 }) {
   const session = useSession();
@@ -81,21 +81,28 @@ export function JobQuestionsList({
 
   if (!session) return null;
   const mayWork = canWorkJob(job, session.user.role, session.user.id);
-  // Answers by non-assignees are attributed to the first assignee (mobile parity).
-  const answeredBy = !isAssignedToJob(job, session.user.id) ? job.assignees[0]?.id : undefined;
+  // Non-assignees pick which assignee to answer on behalf of in the dialog.
+  const notAssigned = !isAssignedToJob(job, session.user.id);
+
+  const responderPending =
+    (responderTarget?.response
+      ? editAnswer.isPending
+      : answerQuestion.isPending) && responderTarget !== null;
 
   if (job.question_requests.length === 0) {
     return <p className="text-sm text-muted-foreground">No questions for this visit.</p>;
   }
 
+  // Review / narrow panels: stack like photos. Wider surfaces keep the card grid.
+  const useListLayout = singleColumn || showCardBadge;
+
   return (
     <>
-      <div
+      <ul
         className={cn(
-          "grid gap-4 py-1",
-          singleColumn
-            ? "grid-cols-1"
-            : "grid-cols-1 min-[640px]:grid-cols-2 min-[1100px]:grid-cols-3",
+          useListLayout
+            ? "space-y-3"
+            : "grid grid-cols-1 gap-4 py-1 min-[640px]:grid-cols-2 min-[1100px]:grid-cols-3",
         )}
       >
         {job.question_requests.map((request) => {
@@ -105,99 +112,135 @@ export function JobQuestionsList({
           const hasResponse = responses.length > 0;
 
           return (
-            <div
+            <li
               key={request.id}
-              className="box-border min-w-0 rounded-xl border border-black/10 bg-white p-4 dark:border-border dark:bg-card"
+              className={cn(
+                "box-border min-w-0 text-sm",
+                showCardBadge
+                  ? "rounded-xl border border-border bg-card p-3 shadow-sm"
+                  : "rounded-xl border border-black/10 bg-white p-4 dark:border-border dark:bg-card",
+              )}
             >
-              <div className="flex flex-row items-center gap-3">
+              <div className="flex items-start gap-3">
                 {showCardBadge ? (
-                  <div className="inline-flex size-[52px] shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg bg-[#4a76fd] text-white">
-                    <HugeiconsIcon icon={HelpCircleIcon} className="size-[22px]" aria-hidden="true" />
-                    <span className="text-[10px] font-bold tracking-wide uppercase">Answer</span>
+                  <div className="inline-flex size-12 shrink-0 flex-col items-center justify-center rounded-lg bg-primary text-[10px] font-bold tracking-wide text-primary-foreground uppercase">
+                    <HugeiconsIcon
+                      icon={HelpCircleIcon}
+                      className="size-4"
+                      aria-hidden="true"
+                    />
+                    Answer
                   </div>
                 ) : null}
-                <div className="flex min-w-0 flex-1 flex-row flex-wrap items-start gap-2">
-                  {request.required && mayWork ? (
-                    <HugeiconsIcon
-                      icon={Alert02Icon}
-                      className="mt-0.5 size-[22px] shrink-0 text-[#e65100]"
-                      aria-label="Required"
-                    />
-                  ) : null}
-                  <span className="min-w-0 flex-1 text-sm font-medium leading-snug text-foreground">
-                    {request.description}
-                    {request.required && !mayWork ? (
-                      <span className="ml-1 text-destructive">*</span>
+
+                <div className="flex min-w-0 flex-1 flex-col gap-3">
+                  <div className="flex items-start gap-2">
+                    {request.required && mayWork ? (
+                      <HugeiconsIcon
+                        icon={Alert02Icon}
+                        className="mt-0.5 size-4 shrink-0 text-amber-500"
+                        aria-label="Required"
+                      />
                     ) : null}
-                  </span>
+                    <p className="min-w-0 flex-1 font-medium leading-snug text-foreground">
+                      {request.description}
+                      {request.required && !mayWork ? (
+                        <span className="ml-1 text-destructive">*</span>
+                      ) : null}
+                    </p>
+                  </div>
+
+                  {!showCardBadge ? (
+                    <div className="h-px bg-black/10 dark:bg-border" aria-hidden="true" />
+                  ) : null}
+
+                  {!hasResponse ? (
+                    <div
+                      className={cn(
+                        "flex gap-3",
+                        showCardBadge
+                          ? "flex-col items-stretch sm:flex-row sm:items-center sm:justify-between"
+                          : "flex-col items-start",
+                      )}
+                    >
+                      <span className="text-muted-foreground">No answer</span>
+                      {mayWork ? (
+                        <div className={cn(showCardBadge && "flex justify-end")}>
+                          <SoftButton
+                            disabled={isAnswering}
+                            onClick={() => setResponderTarget({ request })}
+                          >
+                            {isAnswering ? "Saving…" : "Write an answer"}
+                          </SoftButton>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {responses.map((response) => {
+                        const isEditing =
+                          editAnswer.isPending &&
+                          responderTarget?.response?.id === response.id;
+                        const isDeleting =
+                          deleteAnswer.isPending &&
+                          deleteTarget?.response.id === response.id;
+                        const busy = isEditing || isDeleting;
+                        return (
+                          <div
+                            key={response.id}
+                            className={cn(
+                              "flex min-w-0 flex-col gap-3",
+                              showCardBadge &&
+                                "sm:flex-row sm:items-end sm:justify-between",
+                              busy && "opacity-50",
+                            )}
+                          >
+                            <p className="min-w-0 flex-1 text-sm leading-snug text-foreground">
+                              {formatAnswer(response.answer_data) || (
+                                <span className="text-muted-foreground">No answer</span>
+                              )}
+                            </p>
+                            {mayWork ? (
+                              <div className="flex flex-row flex-wrap items-center gap-2">
+                                <SoftButton
+                                  disabled={busy}
+                                  ariaLabel="Edit answer"
+                                  onClick={() =>
+                                    setResponderTarget({ request, response })
+                                  }
+                                >
+                                  <HugeiconsIcon
+                                    icon={Edit02Icon}
+                                    size={18}
+                                    strokeWidth={1.8}
+                                  />
+                                  <span>{isEditing ? "Saving…" : "Edit"}</span>
+                                </SoftButton>
+                                <SoftButton
+                                  disabled={busy}
+                                  ariaLabel="Remove answer"
+                                  onClick={() => setDeleteTarget({ request, response })}
+                                >
+                                  <HugeiconsIcon
+                                    icon={Delete02Icon}
+                                    size={18}
+                                    strokeWidth={1.8}
+                                  />
+                                  <span>{isDeleting ? "Removing…" : "Remove"}</span>
+                                </SoftButton>
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
-
-              <div className="my-3 h-px bg-black/10 dark:bg-border" aria-hidden="true" />
-
-              {!hasResponse ? (
-                <div className="flex flex-col items-start gap-3 pb-0.5">
-                  <span className="text-sm text-muted-foreground">No answer</span>
-                  {mayWork ? (
-                    <SoftButton
-                      disabled={isAnswering}
-                      onClick={() => setResponderTarget({ request })}
-                    >
-                      {isAnswering ? "Saving…" : "Write an answer"}
-                    </SoftButton>
-                  ) : null}
-                </div>
-              ) : (
-                <div className="flex flex-col items-stretch gap-3">
-                  {responses.map((response) => {
-                    const busy =
-                      (editAnswer.isPending &&
-                        responderTarget?.response?.id === response.id) ||
-                      (deleteAnswer.isPending && deleteTarget?.response.id === response.id);
-                    return (
-                      <div
-                        key={response.id}
-                        className={cn(
-                          "flex min-w-0 flex-col items-stretch",
-                          busy && "opacity-50",
-                        )}
-                      >
-                        <div className="relative pb-1">
-                          <p className="text-sm text-foreground">
-                            {formatAnswer(response.answer_data) || (
-                              <span className="text-muted-foreground">No answer</span>
-                            )}
-                          </p>
-                        </div>
-                        {mayWork ? (
-                          <div className="mt-4 flex flex-row flex-wrap items-center justify-start gap-2 pt-1">
-                            <SoftButton
-                              disabled={busy}
-                              ariaLabel="Edit answer"
-                              onClick={() => setResponderTarget({ request, response })}
-                            >
-                              <HugeiconsIcon icon={Edit02Icon} size={18} strokeWidth={1.8} />
-                              <span>Edit</span>
-                            </SoftButton>
-                            <SoftButton
-                              disabled={busy}
-                              ariaLabel="Remove answer"
-                              onClick={() => setDeleteTarget({ request, response })}
-                            >
-                              <HugeiconsIcon icon={Delete02Icon} size={18} strokeWidth={1.8} />
-                              <span>Remove</span>
-                            </SoftButton>
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
 
       {responderTarget && (
         <QuestionResponderDialog
@@ -206,8 +249,11 @@ export function JobQuestionsList({
           request={responderTarget.request}
           initialAnswer={responderTarget.response?.answer_data}
           open
+          isPending={responderPending}
           onOpenChange={(open) => !open && setResponderTarget(null)}
-          onSubmit={(answerData) => {
+          // Edits keep the original attribution; only new answers pick a user.
+          assignees={!responderTarget.response && notAssigned ? job.assignees : undefined}
+          onSubmit={(answerData, answeredBy) => {
             if (responderTarget.response) {
               editAnswer.mutate(
                 {
@@ -236,13 +282,17 @@ export function JobQuestionsList({
         title="Delete answer"
         question="Are you sure you want to delete this answer?"
         destructive
+        isPending={deleteAnswer.isPending}
+        confirmLabel={deleteAnswer.isPending ? "Deleting…" : "Yes"}
         onConfirm={() => {
-          if (deleteTarget) {
-            deleteAnswer.mutate({
+          if (!deleteTarget) return;
+          deleteAnswer.mutate(
+            {
               questionRequestId: deleteTarget.request.id,
               questionResponseId: deleteTarget.response.id,
-            });
-          }
+            },
+            { onSuccess: () => setDeleteTarget(null) },
+          );
         }}
       />
     </>

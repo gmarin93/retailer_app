@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { Label } from "@/shared/components/ui/label";
 import { LoadingState } from "@/shared/components/loading-state";
 import { useSetStoreUserPriorities, useStoreDetailV2 } from "../hooks";
 import type { DetailedStore, ListableEntityLite } from "../schemas";
@@ -28,6 +29,7 @@ import {
   formatProgramSelected,
   formatUserOption,
   formatUserSelected,
+  renderUserOption,
 } from "./entity-search-field";
 
 interface PriorityEntry {
@@ -86,134 +88,139 @@ function PrioritiesForm({
 
   return (
     <>
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto">
-        <h3 className="text-sm font-medium">Rep assignments</h3>
-        {entries.length > 0 && (
-          <div className="hidden gap-3 px-1 text-xs text-muted-foreground sm:grid sm:grid-cols-[1fr_1fr_1fr_auto]">
-            <span>User</span>
-            <span>Customer</span>
-            <span>Program</span>
-            <span className="w-36" />
-          </div>
-        )}
-
-        {entries.length === 0 ? (
-          <div className="flex items-center justify-between rounded-md border px-3 py-4 text-sm">
-            <span className="text-muted-foreground">
-              There are no reps currently assigned to this store.
-            </span>
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-0.5">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-medium">Rep assignments</h3>
+          {entries.length > 0 && (
             <Button
               type="button"
-              size="icon-sm"
+              size="sm"
               variant="outline"
-              aria-label="Add rep"
-              onClick={() => setEntries([newEntry()])}
+              onClick={() => setEntries((current) => [...current, newEntry()])}
             >
-              <HugeiconsIcon icon={Add01Icon} aria-hidden="true" />
+              <HugeiconsIcon icon={Add01Icon} aria-hidden="true" data-icon="inline-start" />
+              Add rep
+            </Button>
+          )}
+        </div>
+
+        {entries.length === 0 ? (
+          <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed px-4 py-6">
+            <p className="text-sm text-muted-foreground">
+              There are no reps currently assigned to this store.
+            </p>
+            <Button type="button" size="sm" onClick={() => setEntries([newEntry()])}>
+              <HugeiconsIcon icon={Add01Icon} aria-hidden="true" data-icon="inline-start" />
+              Assign a rep
             </Button>
           </div>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {entries.map((entry, index) => (
-              <li
-                key={entry.key}
-                className="grid gap-2 rounded-md border p-2 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-center"
-              >
-                <EntitySearchField
-                  key={entry.user?.id ?? `user-${entry.key}`}
-                  route="users"
-                  value={entry.user}
-                  onChange={(user) =>
-                    setEntries((current) =>
-                      current.map((row, i) => (i === index ? { ...row, user } : row)),
-                    )
-                  }
-                  formatOption={formatUserOption}
-                  formatSelected={formatUserSelected}
-                  placeholder="User"
-                  required
-                  aria-label={`User for row ${index + 1}`}
-                />
-                <EntitySearchField
-                  key={entry.customer?.id ?? `customer-${entry.key}`}
-                  route="customers"
-                  value={entry.customer}
-                  onChange={(customer) =>
-                    setEntries((current) =>
-                      current.map((row, i) =>
-                        i === index ? { ...row, customer, program: null } : row,
-                      ),
-                    )
-                  }
-                  formatOption={formatCustomerOption}
-                  formatSelected={formatCustomerSelected}
-                  placeholder="Customer (optional)"
-                  aria-label={`Customer for row ${index + 1}`}
-                />
-                <EntitySearchField
-                  key={`${entry.customer?.id ?? "any"}-${entry.program?.id ?? `program-${entry.key}`}`}
-                  route="programs"
-                  value={entry.program}
-                  onChange={(program) =>
-                    setEntries((current) =>
-                      current.map((row, i) => (i === index ? { ...row, program } : row)),
-                    )
-                  }
-                  formatOption={formatProgramOption}
-                  formatSelected={formatProgramSelected}
-                  placeholder="Program (optional)"
-                  extraParams={
-                    entry.customer ? { customer__id__in: entry.customer.id } : undefined
-                  }
-                  aria-label={`Program for row ${index + 1}`}
-                />
-                <div className="flex items-center gap-0.5">
-                  <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="ghost"
-                    disabled={index === 0}
-                    aria-label="Move up"
-                    onClick={() => move(index, -1)}
-                  >
-                    <HugeiconsIcon icon={ArrowUp01Icon} aria-hidden="true" />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="ghost"
-                    disabled={index >= entries.length - 1}
-                    aria-label="Move down"
-                    onClick={() => move(index, 1)}
-                  >
-                    <HugeiconsIcon icon={ArrowDown01Icon} aria-hidden="true" />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label="Remove"
-                    onClick={() =>
-                      setEntries((current) => current.filter((_, i) => i !== index))
+              <li key={entry.key} className="space-y-3 rounded-xl border bg-card p-3 shadow-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    Rep {index + 1}
+                  </span>
+                  <div className="flex items-center gap-0.5">
+                    <Button
+                      type="button"
+                      size="icon-sm"
+                      variant="ghost"
+                      disabled={index === 0}
+                      aria-label="Move up"
+                      onClick={() => move(index, -1)}
+                    >
+                      <HugeiconsIcon icon={ArrowUp01Icon} aria-hidden="true" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon-sm"
+                      variant="ghost"
+                      disabled={index >= entries.length - 1}
+                      aria-label="Move down"
+                      onClick={() => move(index, 1)}
+                    >
+                      <HugeiconsIcon icon={ArrowDown01Icon} aria-hidden="true" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon-sm"
+                      variant="ghost"
+                      aria-label="Remove"
+                      onClick={() =>
+                        setEntries((current) => current.filter((_, i) => i !== index))
+                      }
+                    >
+                      <HugeiconsIcon icon={Cancel01Icon} aria-hidden="true" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>User</Label>
+                  <EntitySearchField
+                    key={entry.user?.id ?? `user-${entry.key}`}
+                    route="users"
+                    value={entry.user}
+                    onChange={(user) =>
+                      setEntries((current) =>
+                        current.map((row, i) => (i === index ? { ...row, user } : row)),
+                      )
                     }
-                  >
-                    <HugeiconsIcon icon={Cancel01Icon} aria-hidden="true" />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label="Add row below"
-                    onClick={() =>
-                      setEntries((current) => {
-                        const next = [...current];
-                        next.splice(index + 1, 0, newEntry());
-                        return next;
-                      })
-                    }
-                  >
-                    <HugeiconsIcon icon={Add01Icon} aria-hidden="true" />
-                  </Button>
+                    formatOption={formatUserOption}
+                    formatSelected={formatUserSelected}
+                    renderOption={renderUserOption}
+                    placeholder="Search by name or username…"
+                    required
+                    menuMinWidth={360}
+                    aria-label={`User for row ${index + 1}`}
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>Customer (optional)</Label>
+                    <EntitySearchField
+                      key={entry.customer?.id ?? `customer-${entry.key}`}
+                      route="customers"
+                      value={entry.customer}
+                      onChange={(customer) =>
+                        setEntries((current) =>
+                          current.map((row, i) =>
+                            i === index ? { ...row, customer, program: null } : row,
+                          ),
+                        )
+                      }
+                      formatOption={formatCustomerOption}
+                      formatSelected={formatCustomerSelected}
+                      placeholder="Any customer"
+                      menuMinWidth={280}
+                      aria-label={`Customer for row ${index + 1}`}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Program (optional)</Label>
+                    <EntitySearchField
+                      key={`${entry.customer?.id ?? "any"}-${entry.program?.id ?? `program-${entry.key}`}`}
+                      route="programs"
+                      value={entry.program}
+                      onChange={(program) =>
+                        setEntries((current) =>
+                          current.map((row, i) => (i === index ? { ...row, program } : row)),
+                        )
+                      }
+                      formatOption={formatProgramOption}
+                      formatSelected={formatProgramSelected}
+                      placeholder="Any program"
+                      extraParams={
+                        entry.customer ? { customer__id__in: entry.customer.id } : undefined
+                      }
+                      menuMinWidth={280}
+                      aria-label={`Program for row ${index + 1}`}
+                    />
+                  </div>
                 </div>
               </li>
             ))}
@@ -282,7 +289,7 @@ export function StoreUserPrioritiesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-4xl">
+      <DialogContent className="flex max-h-[90vh] flex-col gap-4 overflow-visible sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Assign reps</DialogTitle>
           <DialogDescription>{storeLabel}</DialogDescription>

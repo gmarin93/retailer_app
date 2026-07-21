@@ -145,9 +145,14 @@ export function ItineraryDetail({
           <Button
             onClick={() => setReportDialogOpen(true)}
             disabled={submitReport.isPending}
+            aria-busy={submitReport.isPending}
           >
             <HugeiconsIcon icon={Clock01Icon} aria-hidden="true" className="size-4" />
-            {report ? "Resubmit report" : "Submit"}
+            {submitReport.isPending
+              ? "Submitting…"
+              : report
+                ? "Resubmit report"
+                : "Submit"}
           </Button>
         </div>
       ) : !mayWork ? (

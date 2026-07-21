@@ -169,7 +169,7 @@ export function ReportDialog({
               <Field>
                 <FieldLabel htmlFor="report-reported-by">Reported by</FieldLabel>
                 <Select
-                  value={reportedBy}
+                  value={reportedBy ?? ""}
                   onValueChange={(value) => form.setValue("reportedBy", value)}
                 >
                   <SelectTrigger id="report-reported-by">

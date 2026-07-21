@@ -29,11 +29,11 @@ export function VisitSectionPanel({
         className,
       )}
     >
-      <div className="flex shrink-0 items-center justify-center gap-2 bg-[#d2e3fc] px-3 py-2.5 text-[#1e3a8a] dark:bg-primary/20 dark:text-primary-foreground">
+      <div className="flex shrink-0 items-center justify-center gap-2 bg-[#d2e3fc] px-3 py-2.5 dark:bg-primary/20">
         <HugeiconsIcon icon={icon} className="size-5 text-primary" aria-hidden="true" />
-        <h3 className="text-sm font-semibold text-foreground dark:text-foreground">{title}</h3>
+        <h3 className="text-sm font-semibold text-[#1e3a8a] dark:text-foreground">{title}</h3>
       </div>
-      <div className="flex-1 p-3">{children}</div>
+      <div className="flex-1 space-y-0 p-3">{children}</div>
     </section>
   );
 }

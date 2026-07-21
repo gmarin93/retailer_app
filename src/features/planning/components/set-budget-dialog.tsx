@@ -72,7 +72,7 @@ export function SetBudgetDialog({
           <div className="space-y-1.5">
             <Label>Customer</Label>
             <Select
-              value={customerId === null ? undefined : String(customerId)}
+              value={customerId === null ? "" : String(customerId)}
               onValueChange={(value) => setCustomerId(Number(value))}
             >
               <SelectTrigger className="w-full">
@@ -91,7 +91,7 @@ export function SetBudgetDialog({
           <div className="space-y-1.5">
             <Label>Cycle</Label>
             <Select
-              value={cycleId === null ? undefined : String(cycleId)}
+              value={cycleId === null ? "" : String(cycleId)}
               onValueChange={(value) => setCycleId(Number(value))}
             >
               <SelectTrigger className="w-full">

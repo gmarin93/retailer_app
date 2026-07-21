@@ -92,8 +92,8 @@ export function JobPhotosList({
   const showReview = canSeePhotoReview(role);
   // Accept/reject is elevated…supervisor (canAcceptRejectPhotos); reps see status only.
   const mayAcceptReject = reviewMode && isElevatedOrManagerOrSupervisor(role);
-  // Uploads by non-assignees are attributed to the first assignee (mobile parity).
-  const uploadedBy = !isAssignedToJob(job, session.user.id) ? job.assignees[0]?.id : undefined;
+  // Non-assignees pick which assignee to upload on behalf of in the dialog.
+  const notAssigned = !isAssignedToJob(job, session.user.id);
 
   if (job.photo_requests.length === 0) {
     return <p className="text-sm text-muted-foreground">No photo requests for this visit.</p>;
@@ -250,6 +250,7 @@ export function JobPhotosList({
                     <Button
                       variant={showCardBadge ? "default" : "outline"}
                       size="sm"
+                      className="rounded-full"
                       disabled={isUploading}
                       onClick={() => setUploadTarget(request)}
                     >
@@ -275,16 +276,23 @@ export function JobPhotosList({
       <PhotoUploadDialog
         open={uploadTarget !== null}
         onOpenChange={(open) => !open && setUploadTarget(null)}
-        onSubmit={(files) => {
-          if (uploadTarget) {
-            upload.mutate({ photoRequestId: uploadTarget.id, files, uploadedBy });
-          }
+        assignees={notAssigned ? job.assignees : undefined}
+        isPending={upload.isPending}
+        onSubmit={(files, uploadedBy) => {
+          if (!uploadTarget) return;
+          upload.mutate(
+            { photoRequestId: uploadTarget.id, files, uploadedBy },
+            { onSuccess: () => setUploadTarget(null) },
+          );
         }}
       />
 
       <Dialog
         open={feedbackTarget !== null}
-        onOpenChange={(open) => !open && setFeedbackTarget(null)}
+        onOpenChange={(open) => {
+          if (!open && setFeedback.isPending) return;
+          if (!open) setFeedbackTarget(null);
+        }}
       >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -297,26 +305,33 @@ export function JobPhotosList({
             value={feedbackDraft}
             onChange={(event) => setFeedbackDraft(event.target.value)}
             rows={3}
+            disabled={setFeedback.isPending}
             aria-label="Photo feedback"
-            className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
           />
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setFeedbackTarget(null)}>
+            <Button
+              variant="ghost"
+              disabled={setFeedback.isPending}
+              onClick={() => setFeedbackTarget(null)}
+            >
               Cancel
             </Button>
             <Button
               disabled={setFeedback.isPending}
+              aria-busy={setFeedback.isPending}
               onClick={() => {
-                if (feedbackTarget) {
-                  setFeedback.mutate({
+                if (!feedbackTarget) return;
+                setFeedback.mutate(
+                  {
                     photoResponseId: feedbackTarget.id,
                     feedback: feedbackDraft.trim(),
-                  });
-                }
-                setFeedbackTarget(null);
+                  },
+                  { onSuccess: () => setFeedbackTarget(null) },
+                );
               }}
             >
-              Save
+              {setFeedback.isPending ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -328,13 +343,17 @@ export function JobPhotosList({
         title="Delete photo"
         question="Are you sure you want to delete this photo?"
         destructive
+        isPending={deletePhoto.isPending}
+        confirmLabel={deletePhoto.isPending ? "Deleting…" : "Yes"}
         onConfirm={() => {
-          if (deleteTarget) {
-            deletePhoto.mutate({
+          if (!deleteTarget) return;
+          deletePhoto.mutate(
+            {
               photoRequestId: deleteTarget.request.id,
               photoResponseId: deleteTarget.response.id,
-            });
-          }
+            },
+            { onSuccess: () => setDeleteTarget(null) },
+          );
         }}
       />
     </ul>

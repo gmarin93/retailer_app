@@ -196,7 +196,7 @@ export function CustomerVisitsView() {
                   Access level<span className="ml-0.5 text-[#e85a3a]">*</span>
                 </label>
                 <Select
-                  value={level || undefined}
+                  value={level || ""}
                   onValueChange={(v) => {
                     setLevel(v as AccessLevel);
                     setLookupArmed(false);
@@ -223,7 +223,7 @@ export function CustomerVisitsView() {
                   Customer<span className="ml-0.5 text-[#e85a3a]">*</span>
                 </label>
                 <div className="relative">
-                  <Select value={customerId || undefined} onValueChange={setCustomerId}>
+                  <Select value={customerId || ""} onValueChange={setCustomerId}>
                     <SelectTrigger
                       id="cv-customer"
                       className="h-11 w-full rounded-[10px] border-slate-900/12 bg-white pr-10 dark:bg-background"

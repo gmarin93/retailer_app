@@ -232,7 +232,7 @@ export function PlanningView() {
             <div className="min-w-0 flex-1 space-y-1">
               <span className="block text-xs font-medium text-muted-foreground">Cycle</span>
               <Select
-                value={effectiveCycleId === null ? undefined : String(effectiveCycleId)}
+                value={effectiveCycleId === null ? "" : String(effectiveCycleId)}
                 onValueChange={(value) => {
                   setCycleId(Number(value));
                   setSelectedPlanId(null);
@@ -269,7 +269,7 @@ export function PlanningView() {
             <div className="min-w-0 flex-1 space-y-1">
               <span className="block text-xs font-medium text-muted-foreground">Customer</span>
               <Select
-                value={effectiveCustomerId === null ? undefined : String(effectiveCustomerId)}
+                value={effectiveCustomerId === null ? "" : String(effectiveCustomerId)}
                 onValueChange={(value) => {
                   setCustomerId(Number(value));
                   setProgramId(null);
@@ -307,7 +307,7 @@ export function PlanningView() {
             <div className="min-w-0 flex-1 space-y-1">
               <span className="block text-xs font-medium text-muted-foreground">Program</span>
               <Select
-                value={effectiveProgramId === null ? undefined : String(effectiveProgramId)}
+                value={effectiveProgramId === null ? "" : String(effectiveProgramId)}
                 onValueChange={(value) => {
                   setProgramId(Number(value));
                   setSelectedPlanId(null);

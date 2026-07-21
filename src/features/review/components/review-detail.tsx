@@ -300,7 +300,7 @@ export function ReviewDetail({
         )}
       </VisitSummaryCard>
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
         <VisitSectionPanel title="Photos" icon={Camera01Icon}>
           <JobPhotosList
             job={job}
@@ -314,7 +314,7 @@ export function ReviewDetail({
           />
         </VisitSectionPanel>
         <VisitSectionPanel title="Questions" icon={HelpCircleIcon}>
-          <JobQuestionsList job={job} showCardBadge />
+          <JobQuestionsList job={job} showCardBadge singleColumn />
         </VisitSectionPanel>
       </div>
 

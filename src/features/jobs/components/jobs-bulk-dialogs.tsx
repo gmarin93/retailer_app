@@ -272,6 +272,7 @@ export function BulkReinstateDialog({ jobIds, open, onOpenChange, onDone }: Bulk
       onOpenChange={onOpenChange}
       title="Reinstate visits"
       question={`Reinstate ${jobIds.length} selected visit${jobIds.length === 1 ? "" : "s"}?`}
+      isPending={mutation.isPending}
       confirmLabel={mutation.isPending ? "Working…" : "Reinstate"}
       onConfirm={() => mutation.mutate()}
     />

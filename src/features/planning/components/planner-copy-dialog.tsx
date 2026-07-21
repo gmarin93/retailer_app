@@ -116,7 +116,7 @@ export function PlannerCopyDialog({
           <div className="space-y-1.5">
             <Label>Customer</Label>
             <Select
-              value={customerId === null ? undefined : String(customerId)}
+              value={customerId === null ? "" : String(customerId)}
               onValueChange={(value) => {
                 setCustomerId(Number(value));
                 setProgramId(null);
@@ -138,7 +138,7 @@ export function PlannerCopyDialog({
           <div className="space-y-1.5">
             <Label>Program</Label>
             <Select
-              value={programId === null ? undefined : String(programId)}
+              value={programId === null ? "" : String(programId)}
               onValueChange={(value) => setProgramId(Number(value))}
               disabled={customerId === null}
             >

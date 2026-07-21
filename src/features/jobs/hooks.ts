@@ -28,7 +28,6 @@ import {
   type JobsView,
 } from "./api";
 import {
-  detailedJobSchema,
   formatJobStatus,
   jobReportSchema,
   type DetailedJob,
@@ -74,9 +73,11 @@ export function useJobDetail(id: number | null, view?: JobsView) {
 }
 
 /**
- * Submits a visit report. On success the cached detail is updated in place
- * (status → pending, reports ← [response]) exactly like the Angular bloc's
- * optimistic jobStream update, then list + detail are refetched.
+ * Submits a visit report. On success the posted report is merged into the
+ * cached detail (status → pending). The v2 endpoint returns only the posted
+ * report, not the job's full report list, so replace any existing report by
+ * the same reporter and keep everyone else's reports intact — replacing the
+ * whole list would hide other assignees' reports in multi-report review.
  */
 export function useSubmitReport(jobId: number | null) {
   const queryClient = useQueryClient();
@@ -84,14 +85,22 @@ export function useSubmitReport(jobId: number | null) {
     mutationFn: (payload: JobReportPayload) => postJobReport(jobId!, payload),
     onSuccess: (response) => {
       toast.success("Successfully submitted report");
+      const parsed = jobReportSchema.safeParse(response);
       for (const view of DETAIL_VIEWS) {
         queryClient.setQueryData<DetailedJob>(jobKeys.detail(jobId, view), (job) => {
           if (!job) return job;
-          const report = detailedJobSchema.shape.reports.safeParse([response]);
+          if (!parsed.success) return { ...job, status: "pending" };
+          const posted = parsed.data;
+          const reporterId = posted.reported_by_user?.id;
+          const others = job.reports.filter(
+            (report) =>
+              report.id !== posted.id &&
+              (reporterId == null || report.reported_by_user?.id !== reporterId),
+          );
           return {
             ...job,
             status: "pending",
-            reports: report.success ? report.data : job.reports,
+            reports: [...others, posted],
           };
         });
       }
