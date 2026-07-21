@@ -32,6 +32,16 @@ export const PLAN_RATE_TYPE_OPTIONS = Object.entries(PLAN_RATE_TYPE_LABELS) as [
   string,
 ][];
 
+const PLAN_RATE_TYPE_SET = new Set<string>(Object.keys(PLAN_RATE_TYPE_LABELS));
+
+/** Coerce API / form values to a backend-accepted rate type (never `""`). */
+export function normalizePlanRateType(value: unknown): PlanRateType {
+  if (typeof value === "string" && PLAN_RATE_TYPE_SET.has(value)) {
+    return value as PlanRateType;
+  }
+  return "hourly";
+}
+
 export type QuestionRequestKind =
   | "text"
   | "true_false"

@@ -15,7 +15,7 @@ import type {
   PhotoPaletteTemplate,
   QuestionPaletteTemplate,
 } from "./palette-types";
-import type { PlanRateType, QuestionRequestKind } from "./types";
+import { normalizePlanRateType, type PlanRateType, type QuestionRequestKind } from "./types";
 
 type DetailedQuestionRequest = DetailedPlan["question_requests"][number];
 
@@ -77,7 +77,7 @@ export function decodeQuestionRequestData(
 export function detailedPlanToFormValues(plan: DetailedPlan): PlanEditorFormValues {
   return {
     group: plan.group,
-    rate_type: (plan.rate_type || "hourly") as PlanRateType,
+    rate_type: normalizePlanRateType(plan.rate_type),
     rate: plan.rate,
     is_survey: plan.is_survey,
     stores: [...plan.stores],
@@ -226,7 +226,7 @@ export function buildCopyPlanPayload(
     cycle: options.cycleId,
     program: options.programId,
     group: options.group,
-    rate_type: (plan.rate_type || "hourly") as PlanRateType,
+    rate_type: normalizePlanRateType(plan.rate_type),
     rate: plan.rate,
     is_survey: plan.is_survey,
     photo_requests: plan.photo_requests.map((photo) => ({
@@ -288,7 +288,8 @@ export function buildPatchablePlan(
   const patch: PatchablePlan = {};
 
   if (dirtyFields.group) patch.group = values.group;
-  if (dirtyFields.rate_type) patch.rate_type = values.rate_type;
+  // Backend rejects `""` (`"\"\" is not a valid choice."`) — only send a real choice.
+  if (dirtyFields.rate_type) patch.rate_type = normalizePlanRateType(values.rate_type);
   if (dirtyFields.rate) patch.rate = Number(values.rate) || 0;
   if (dirtyFields.is_survey) patch.is_survey = values.is_survey;
   if (dirtyFields.stores) patch.stores = values.stores;

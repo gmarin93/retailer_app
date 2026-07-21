@@ -150,8 +150,16 @@ export function usePatchPlan(
       toast.success("Successfully saved plan.");
       invalidatePlanQueries(queryClient, cycleId, programId, planId);
     },
-    onError: (error) =>
-      toast.error(error instanceof ApiError ? error.message : "Failed to save plan."),
+    onError: (error) => {
+      if (error instanceof ApiError) {
+        const fieldDetail = Object.entries(error.fieldErrors)
+          .map(([field, messages]) => `${field}: ${messages.join(", ")}`)
+          .join("; ");
+        toast.error(fieldDetail || error.message || "Failed to save plan.");
+        return;
+      }
+      toast.error("Failed to save plan.");
+    },
   });
 }
 

@@ -66,6 +66,7 @@ import type {
 import {
   PLAN_RATE_TYPE_OPTIONS,
   QUESTION_REQUEST_KIND_OPTIONS,
+  normalizePlanRateType,
   type PlanEditorTab,
   type PlanRateType,
   type QuestionRequestKind,
@@ -505,8 +506,11 @@ export function PlanEditor({
                   name="rate_type"
                   render={({ field }) => (
                     <Select
-                      value={field.value}
-                      onValueChange={(value) => field.onChange(value as PlanRateType)}
+                      value={normalizePlanRateType(field.value)}
+                      onValueChange={(value) => {
+                        if (!value) return;
+                        field.onChange(normalizePlanRateType(value));
+                      }}
                       disabled={!editRate || busy}
                     >
                       <SelectTrigger className="w-full">
