@@ -231,6 +231,18 @@ export function JobsFilterPanel({
     onOpenChange(next);
   };
 
+  const handleApply = () => {
+    onApply({
+      ...draft,
+      programs: draftPrograms,
+      storeRegions: draftStoreRegions,
+      stores: draftStores,
+      ids: parseIdList(idsText),
+      groups: parseGroupList(groupsText),
+    });
+    onOpenChange(false);
+  };
+
   const toggleStatus = (status: string) => {
     setDraft((prev) => ({
       ...prev,
@@ -246,6 +258,13 @@ export function JobsFilterPanel({
         <SheetHeader>
           <SheetTitle>Filter visits</SheetTitle>
         </SheetHeader>
+        <form
+          className="flex min-h-0 flex-1 flex-col"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleApply();
+          }}
+        >
         <div className="flex-1 space-y-6 overflow-auto px-4 py-2">
           {showAssignees && (
             <Section title="People & assignment">
@@ -562,23 +581,9 @@ export function JobsFilterPanel({
           >
             Reset
           </Button>
-          <Button
-            type="button"
-            onClick={() => {
-              onApply({
-                ...draft,
-                programs: draftPrograms,
-                storeRegions: draftStoreRegions,
-                stores: draftStores,
-                ids: parseIdList(idsText),
-                groups: parseGroupList(groupsText),
-              });
-              onOpenChange(false);
-            }}
-          >
-            Apply filters
-          </Button>
+          <Button type="submit">Apply filters</Button>
         </SheetFooter>
+        </form>
       </SheetContent>
     </Sheet>
   );

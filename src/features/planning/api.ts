@@ -153,8 +153,10 @@ export async function fetchPlanReadiness(
 
 /** Create a plan group (`POST /v1/plans/`). */
 export async function createPlan(payload: PostablePlan): Promise<ListablePlan> {
-  const data = await api.post<unknown>(`${v1}/plans/`, payload);
-  return listablePlanSchema.parse(data);
+  // v1 POST returns a different shape from v2 (e.g. cycle/program as IDs, not objects).
+  // Extract the id and re-fetch from v2 so the response always matches listablePlanSchema.
+  const created = await api.post<{ id: number }>(`${v1}/plans/`, payload);
+  return fetchPlan(created.id);
 }
 
 /** Save dirty plan fields (`PATCH /v1/plans/{id}/`). */
@@ -162,8 +164,8 @@ export async function patchPlan(
   planId: number,
   payload: PatchablePlan,
 ): Promise<ListablePlan> {
-  const data = await api.patch<unknown>(`${v1}/plans/${planId}/`, payload);
-  return listablePlanSchema.parse(data);
+  await api.patch<unknown>(`${v1}/plans/${planId}/`, payload);
+  return fetchPlan(planId);
 }
 
 export async function deletePlan(planId: number): Promise<void> {

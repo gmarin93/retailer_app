@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useSession } from "@/features/auth/hooks";
 import { UserRole } from "@/features/auth/types";
+import { FieldRepDashboard } from "@/features/field-rep-dashboard/components/field-rep-dashboard";
 import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
 import {
@@ -93,6 +94,10 @@ export function DashboardView() {
 
   if (role === UserRole.CUSTOMER_ACCOUNT) {
     return <CustomerDashboard />;
+  }
+
+  if (role === UserRole.FIELD_REP) {
+    return <FieldRepDashboard />;
   }
 
   return (
