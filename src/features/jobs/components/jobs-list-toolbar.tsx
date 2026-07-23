@@ -142,7 +142,7 @@ export function JobsListToolbar({
       <div className="overflow-hidden rounded-[14px] border border-slate-900/[0.06] bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)] dark:border-border dark:bg-card">
         <div className="flex flex-row flex-wrap items-center gap-3 px-3 py-2.5 md:px-5 md:py-3">
           {/* Search */}
-          <div className="relative order-first w-full min-w-0 flex-shrink-0 md:w-[400px] md:max-w-[400px]">
+          <div className="relative w-full min-w-0 flex-shrink-0 md:order-last md:w-[520px] md:max-w-[520px]">
             <button
               type="button"
               onClick={onSearch}
@@ -287,7 +287,7 @@ export function JobsListToolbar({
         </div>
 
         {showQuick && (
-          <div className="flex flex-row flex-wrap items-center gap-2 border-t border-slate-900/[0.05] px-3 pt-0 pb-2.5 md:px-5 md:pb-3 dark:border-border">
+          <div className="flex flex-row flex-wrap items-center gap-2 border-t border-slate-900/[0.05] px-3 pt-2.5 pb-2.5 md:px-5 md:pt-3 md:pb-3 dark:border-border">
             <span className="mr-1 text-xs font-semibold tracking-[0.04em] text-slate-900/45 uppercase dark:text-muted-foreground">
               Quick:
             </span>

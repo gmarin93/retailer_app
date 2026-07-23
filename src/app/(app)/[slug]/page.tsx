@@ -4,6 +4,10 @@ import { EmptyState } from "@/shared/components/empty-state";
 import { PageHeader } from "@/shared/components/page-header";
 import { ALL_PAGES, isPageEnabled } from "@/shared/constants/pages";
 
+export function generateStaticParams() {
+  return ALL_PAGES.map((page) => ({ slug: page.id }));
+}
+
 /**
  * Catch-all for registered pages that have not been migrated yet. Keeps every
  * sidebar link functional during the incremental migration; each vertical

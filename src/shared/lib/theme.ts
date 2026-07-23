@@ -45,10 +45,12 @@ export function runThemeTransition(durationMs = 220): void {
 }
 
 /**
- * Public FOUC bootstrap script (`/theme-init.js`). Keep the storage key there
- * identical to `THEME_STORAGE_KEY`.
+ * Inlined FOUC bootstrap — runs before React hydrates to avoid a flash of the
+ * wrong theme. Keep the storage key in sync with `THEME_STORAGE_KEY` above.
+ * Static export cannot use next/script beforeInteractive (no server), so this
+ * is rendered via dangerouslySetInnerHTML directly in <head>.
  */
-export const THEME_INIT_SCRIPT_SRC = "/theme-init.js";
+export const THEME_INIT_SCRIPT = `(function(){try{var key="ph.theme";var preference="system";var raw=localStorage.getItem(key);if(raw){var data=JSON.parse(raw);var stored=data&&data.state&&data.state.preference;if(stored==="light"||stored==="dark"||stored==="system"){preference=stored;}}var prefersDark=window.matchMedia("(prefers-color-scheme: dark)").matches;var resolved=preference==="system"?(prefersDark?"dark":"light"):preference;var root=document.documentElement;if(resolved==="dark")root.classList.add("dark");else root.classList.remove("dark");root.style.colorScheme=resolved;}catch(e){}})();`;
 
 /** Recharts axis / grid / tooltip styles bound to CSS design tokens. */
 export const chartTheme = {

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Roboto } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
-import { THEME_INIT_SCRIPT_SRC } from "@/shared/lib/theme";
+import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
 import { cn } from "@/shared/lib/utils";
 import { AppProviders } from "@/shared/providers/app-providers";
 
@@ -37,8 +36,11 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn("h-full font-sans antialiased", geistMono.variable, roboto.variable)}
     >
+      <head>
+        {/* Blocking theme bootstrap — prevents FOUC on static export (no server for beforeInteractive) */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="flex min-h-full flex-col">
-        <Script src={THEME_INIT_SCRIPT_SRC} strategy="beforeInteractive" />
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

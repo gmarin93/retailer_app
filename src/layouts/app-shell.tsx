@@ -207,22 +207,21 @@ export function AppShell({ children }: { children: ReactNode }) {
               </SheetContent>
             </Sheet>
 
-            {/* Search — left-aligned with visible border, matching Angular header. */}
-            <Button
-              type="button"
-              variant="outline"
-              className="h-9 gap-2 rounded-full px-3 text-muted-foreground hover:bg-primary-soft hover:text-primary"
-              aria-label="Open command palette"
-              onClick={() => setCommandPaletteOpen(true)}
-            >
-              <HugeiconsIcon icon={Search01Icon} aria-hidden="true" className="size-[18px]" />
-              <span className="hidden text-sm sm:inline">Search</span>
-              <kbd className="pointer-events-none hidden rounded-[5px] border border-border bg-muted px-[5px] py-px font-sans text-[11px] text-muted-foreground sm:inline">
-                ⌘K
-              </kbd>
-            </Button>
-
             <div className="ml-auto flex items-center gap-1">
+              {/* Search — right-aligned with visible border. */}
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 gap-2 rounded-full px-3 text-muted-foreground hover:bg-primary-soft hover:text-primary"
+                aria-label="Open command palette"
+                onClick={() => setCommandPaletteOpen(true)}
+              >
+                <HugeiconsIcon icon={Search01Icon} aria-hidden="true" className="size-[18px]" />
+                <span className="hidden text-sm sm:inline">Search</span>
+                <kbd className="pointer-events-none hidden rounded-[5px] border border-border bg-muted px-[5px] py-px font-sans text-[11px] text-muted-foreground sm:inline">
+                  ⌘K
+                </kbd>
+              </Button>
               <ReminderBell />
               <div className="flex items-center gap-1.5 pl-1">
                 <UserAvatar user={session.user} size={40} preferOpenLeft />

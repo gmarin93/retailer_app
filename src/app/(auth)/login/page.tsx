@@ -5,7 +5,7 @@ import { LoginForm } from "@/features/auth/components/login-form";
 export const metadata: Metadata = { title: "Log in" };
 
 /** Semantic app version shown on the brand panel (Angular `APP_VERSION`). */
-const APP_VERSION = "0.8.0";
+const APP_VERSION = "1.0.0";
 
 /**
  * Login — visual twin of Angular `login-hud`: soft bokeh background,
